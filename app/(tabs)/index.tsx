@@ -15,21 +15,29 @@ import { useRouter } from 'expo-router';
 import {
   Plus,
   Search,
-  Globe,
   FolderPlus,
   Folder,
   Users,
   Crown,
   ChevronRight,
   Layers,
-  Sparkles,
+  X,
+  CheckSquare,
+  Rocket,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { workspaceService } from '../../services/workspace.service';
-import { Workspace, Space, ClassifiedWorkspaces } from '../../types';
+import { recentSpacesService } from '../../services/recentSpaces.service';
+import { Workspace, Space, ClassifiedWorkspaces, Task } from '../../types';
 import { JiraHeader } from '../../components/jira/JiraHeader';
 import { JiraSlidersIcon } from '../../components/jira/JiraIcons';
 import { WorkspaceModal } from '../../components/WorkspaceModal';
+
+interface UserTaskItem {
+  task: Task;
+  spaceName: string;
+  workspaceName: string;
+}
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -40,6 +48,7 @@ export default function HomeScreen() {
   const [ownedWorkspaces, setOwnedWorkspaces] = useState<Workspace[]>([]);
   const [joinedWorkspaces, setJoinedWorkspaces] = useState<Workspace[]>([]);
   const [userSpaces, setUserSpaces] = useState<{ workspace: Workspace; spaces: Space[] }[]>([]);
+  const [userTasks, setUserTasks] = useState<UserTaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [createWsModalVisible, setCreateWsModalVisible] = useState(false);
@@ -47,28 +56,23 @@ export default function HomeScreen() {
   const loadData = useCallback(async () => {
     if (!user?.id) return;
     try {
-      let classified: ClassifiedWorkspaces = {
-        ownedWorkspaces: [],
-        joinedWorkspaces: [],
-        pendingWorkspaces: [],
-      };
-      try {
-        classified = await workspaceService.getClassifiedWorkspaces(user.id);
-      } catch (err) {
-        // Fallback to getWorkspacesByOwner if classified endpoint is unavailable
-        const fallback = await workspaceService.getWorkspacesByOwner(user.id);
-        classified = {
-          ownedWorkspaces: fallback,
-          joinedWorkspaces: [],
-          pendingWorkspaces: [],
-        };
-      }
+      const [classified, allSpaces, allTasks] = await Promise.all([
+        workspaceService.getClassifiedWorkspaces(user.id).catch(async () => {
+          const fallback = await workspaceService.getWorkspacesByOwner(user.id);
+          return {
+            ownedWorkspaces: fallback,
+            joinedWorkspaces: [],
+            pendingWorkspaces: [],
+          } as ClassifiedWorkspaces;
+        }),
+        workspaceService.getAllUserSpaces(user.id).catch(() => []),
+        workspaceService.getAllUserTasks(user.id).catch(() => []),
+      ]);
 
       setOwnedWorkspaces(classified.ownedWorkspaces || []);
       setJoinedWorkspaces(classified.joinedWorkspaces || []);
-
-      const allSpaces = await workspaceService.getAllUserSpaces(user.id);
       setUserSpaces(allSpaces);
+      setUserTasks(allTasks);
     } catch (e) {
       console.log('Error fetching home data:', e);
     } finally {
@@ -96,55 +100,80 @@ export default function HomeScreen() {
     loadData();
   };
 
-  // Combine and classify for display
+  // Combine workspaces
   const allWorkspaces = [
     ...ownedWorkspaces.map((w) => ({ ...w, isOwner: true })),
     ...joinedWorkspaces.map((w) => ({ ...w, isOwner: false })),
   ];
 
+  // All spaces flattened
+  const allSpacesList = userSpaces.flatMap((item) =>
+    item.spaces.map((sp) => ({
+      ...sp,
+      workspaceName: item.workspace.name,
+    }))
+  );
+
+  // Search filter
+  const cleanQuery = searchQuery.trim().toLowerCase();
+  const isSearching = cleanQuery.length > 0;
+
+  const searchedWorkspaces = isSearching
+    ? allWorkspaces.filter(
+        (w) =>
+          w.name.toLowerCase().includes(cleanQuery) ||
+          (w.description && w.description.toLowerCase().includes(cleanQuery))
+      )
+    : [];
+
+  const searchedSpaces = isSearching
+    ? allSpacesList.filter(
+        (s) =>
+          s.name.toLowerCase().includes(cleanQuery) ||
+          (s.workspaceName && s.workspaceName.toLowerCase().includes(cleanQuery))
+      )
+    : [];
+
+  const searchedTasks = isSearching
+    ? userTasks.filter(
+        (item) =>
+          item.task.title.toLowerCase().includes(cleanQuery) ||
+          (item.task.description && item.task.description.toLowerCase().includes(cleanQuery))
+      )
+    : [];
+
+  const totalMatches =
+    searchedWorkspaces.length + searchedSpaces.length + searchedTasks.length;
+
+  // Filter for normal workspace list
   const filteredWorkspaces = allWorkspaces.filter((w) => {
-    const matchesSearch =
-      w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (w.description && w.description.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    if (!matchesSearch) return false;
-
     if (activeTab === 'owned') return w.isOwner;
     if (activeTab === 'joined') return !w.isOwner;
     return true;
   });
 
-  const allSpacesList = userSpaces.flatMap((item) =>
-    item.spaces.map((sp) => ({ ...sp, workspaceName: item.workspace.name }))
-  );
+  const handleOpenSpace = async (spaceId: number) => {
+    await recentSpacesService.addRecentSpaceId(spaceId);
+    router.push(`/spaces/${spaceId}`);
+  };
 
-  const currentWorkspace = allWorkspaces[0];
-  const workspaceTitle = currentWorkspace
-    ? currentWorkspace.name
-    : user?.username
-    ? `${user.username}-workspace`
-    : 'Không gian làm việc';
+  const getStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'DONE':
+        return { label: 'Hoàn thành', bg: '#0D3823', text: '#36B37E' };
+      case 'IN_PROGRESS':
+        return { label: 'Đang làm', bg: '#43290F', text: '#F59E0B' };
+      default:
+        return { label: 'Cần làm', bg: '#1D3B6A', text: '#579DFF' };
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#101214" />
       <View style={styles.container}>
-        {/* Jira Header */}
+        {/* Jira Header (Top middle component removed as requested) */}
         <JiraHeader
-          renderCenter={() => (
-            <TouchableOpacity
-              style={styles.workspacePill}
-              activeOpacity={0.8}
-              onPress={() => router.push('/(tabs)/spaces')}
-            >
-              <View style={styles.workspaceIconBadge}>
-                <Globe size={13} color="#579DFF" />
-              </View>
-              <Text style={styles.workspacePillText} numberOfLines={1}>
-                {workspaceTitle}
-              </Text>
-            </TouchableOpacity>
-          )}
           rightActions={
             <TouchableOpacity
               style={styles.headerIconButton}
@@ -173,195 +202,406 @@ export default function HomeScreen() {
             <Search size={18} color="#8C9BAB" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Tìm kiếm workspace..."
+              placeholder="Tìm kiếm workspace, space, task..."
               placeholderTextColor="#8C9BAB"
               value={searchQuery}
               onChangeText={setSearchQuery}
+              returnKeyType="search"
             />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.clearSearchBtn}
+              >
+                <X size={16} color="#8C9BAB" />
+              </TouchableOpacity>
+            )}
           </View>
 
-          {/* Quick Access Spaces Row */}
-          {allSpacesList.length > 0 && (
-            <View style={styles.spacesSection}>
-              <Text style={styles.sectionTitle}>Không gian (Spaces) liên quan</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.quickAccessScroll}
-              >
-                {allSpacesList.map((sp, idx) => (
-                  <TouchableOpacity
-                    key={sp.id}
-                    style={styles.quickCard}
-                    activeOpacity={0.75}
-                    onPress={() => router.push(`/spaces/${sp.id}`)}
-                  >
-                    <View
-                      style={[
-                        styles.quickCardIconWrap,
-                        {
-                          backgroundColor:
-                            idx % 2 === 0 ? '#E65100' : '#6554C0',
-                        },
-                      ]}
-                    >
-                      <JiraSlidersIcon size={18} color="#FFFFFF" />
-                    </View>
-                    <View style={styles.quickCardTextWrap}>
-                      <Text style={styles.quickCardTitle} numberOfLines={1}>
-                        {sp.name}
-                      </Text>
-                      <Text style={styles.quickCardSub}>{sp.workspaceName}</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          {/* Filter Segment (Tất cả / Của tôi / Đang tham gia) */}
-          <View style={styles.segmentContainer}>
-            <TouchableOpacity
-              style={[
-                styles.segmentButton,
-                activeTab === 'all' && styles.segmentButtonActive,
-              ]}
-              onPress={() => setActiveTab('all')}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  activeTab === 'all' && styles.segmentTextActive,
-                ]}
-              >
-                Tất cả ({allWorkspaces.length})
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.segmentButton,
-                activeTab === 'owned' && styles.segmentButtonActive,
-              ]}
-              onPress={() => setActiveTab('owned')}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  activeTab === 'owned' && styles.segmentTextActive,
-                ]}
-              >
-                Của tôi ({ownedWorkspaces.length})
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.segmentButton,
-                activeTab === 'joined' && styles.segmentButtonActive,
-              ]}
-              onPress={() => setActiveTab('joined')}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  activeTab === 'joined' && styles.segmentTextActive,
-                ]}
-              >
-                Đang tham gia ({joinedWorkspaces.length})
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Workspaces List */}
           {loading ? (
             <View style={styles.centerContainer}>
               <ActivityIndicator size="small" color="#579DFF" />
-              <Text style={styles.loadingText}>Đang tải danh sách Workspace...</Text>
+              <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
             </View>
-          ) : filteredWorkspaces.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <View style={styles.emptyIconCircle}>
-                <Layers size={36} color="#579DFF" />
+          ) : isSearching ? (
+            /* ================= SEARCH RESULTS VIEW ================= */
+            <View style={styles.searchResultsContainer}>
+              <View style={styles.searchHeaderRow}>
+                <Text style={styles.searchResultsTitle}>Kết quả tìm kiếm</Text>
+                <View style={styles.matchCountBadge}>
+                  <Text style={styles.matchCountText}>{totalMatches} kết quả</Text>
+                </View>
               </View>
-              <Text style={styles.emptyTitle}>
-                {activeTab === 'owned'
-                  ? 'Bạn chưa tạo Workspace nào'
-                  : activeTab === 'joined'
-                  ? 'Chưa tham gia Workspace nào'
-                  : 'Chưa có Workspace nào'}
-              </Text>
-              <Text style={styles.emptySubtitle}>
-                {activeTab === 'joined'
-                  ? 'Khi bạn được mời tham gia Workspace từ các thành viên khác, hãy kiểm tra tab Thông báo để chấp nhận.'
-                  : 'Bắt đầu bằng cách tạo Workspace đầu tiên để quản lý dự án và các thành viên.'}
-              </Text>
-              <TouchableOpacity
-                style={styles.emptyActionBtn}
-                onPress={() => setCreateWsModalVisible(true)}
-                activeOpacity={0.8}
-              >
-                <FolderPlus size={16} color="#FFFFFF" />
-                <Text style={styles.emptyActionBtnText}>Tạo Workspace mới</Text>
-              </TouchableOpacity>
+
+              {totalMatches === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <View style={styles.emptyIconCircle}>
+                    <Search size={32} color="#8C9BAB" />
+                  </View>
+                  <Text style={styles.emptyTitle}>Không tìm thấy kết quả</Text>
+                  <Text style={styles.emptySubtitle}>
+                    Không có workspace, không gian hay công việc nào khớp với "{searchQuery}"
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {/* Matching Workspaces */}
+                  {searchedWorkspaces.length > 0 && (
+                    <View style={styles.searchGroup}>
+                      <View style={styles.searchGroupHeader}>
+                        <Folder size={16} color="#579DFF" />
+                        <Text style={styles.searchGroupTitle}>
+                          Workspace ({searchedWorkspaces.length})
+                        </Text>
+                      </View>
+                      <View style={styles.searchCardGroup}>
+                        {searchedWorkspaces.map((w, idx) => (
+                          <React.Fragment key={`ws-${w.id}`}>
+                            {idx > 0 && <View style={styles.groupDivider} />}
+                            <TouchableOpacity
+                              style={styles.searchItemRow}
+                              activeOpacity={0.75}
+                              onPress={() => router.push(`/workspaces/${w.id}`)}
+                            >
+                              <View
+                                style={[
+                                  styles.itemIconWrap,
+                                  { backgroundColor: w.isOwner ? '#1D3B6A' : '#0D3823' },
+                                ]}
+                              >
+                                {w.isOwner ? (
+                                  <Folder size={18} color="#579DFF" />
+                                ) : (
+                                  <Users size={18} color="#57D9A3" />
+                                )}
+                              </View>
+                              <View style={styles.itemInfoWrap}>
+                                <View style={styles.itemNameRow}>
+                                  <Text style={styles.itemName} numberOfLines={1}>
+                                    {w.name}
+                                  </Text>
+                                  <View
+                                    style={
+                                      w.isOwner ? styles.roleBadgeOwned : styles.roleBadgeJoined
+                                    }
+                                  >
+                                    <Text
+                                      style={
+                                        w.isOwner ? styles.roleTextOwned : styles.roleTextJoined
+                                      }
+                                    >
+                                      {w.isOwner ? 'Của tôi' : 'Đang tham gia'}
+                                    </Text>
+                                  </View>
+                                </View>
+                                {!!w.description && (
+                                  <Text style={styles.itemDesc} numberOfLines={1}>
+                                    {w.description}
+                                  </Text>
+                                )}
+                              </View>
+                              <ChevronRight size={18} color="#8C9BAB" />
+                            </TouchableOpacity>
+                          </React.Fragment>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Matching Spaces */}
+                  {searchedSpaces.length > 0 && (
+                    <View style={styles.searchGroup}>
+                      <View style={styles.searchGroupHeader}>
+                        <JiraSlidersIcon size={16} color="#E65100" />
+                        <Text style={styles.searchGroupTitle}>
+                          Không gian ({searchedSpaces.length})
+                        </Text>
+                      </View>
+                      <View style={styles.searchCardGroup}>
+                        {searchedSpaces.map((sp, idx) => (
+                          <React.Fragment key={`sp-${sp.id}`}>
+                            {idx > 0 && <View style={styles.groupDivider} />}
+                            <TouchableOpacity
+                              style={styles.searchItemRow}
+                              activeOpacity={0.75}
+                              onPress={() => handleOpenSpace(sp.id)}
+                            >
+                              <View
+                                style={[
+                                  styles.itemIconWrap,
+                                  {
+                                    backgroundColor: idx % 2 === 0 ? '#E65100' : '#1D3B6A',
+                                  },
+                                ]}
+                              >
+                                {idx % 2 === 0 ? (
+                                  <JiraSlidersIcon size={18} color="#FFFFFF" />
+                                ) : (
+                                  <Rocket size={18} color="#579DFF" />
+                                )}
+                              </View>
+                              <View style={styles.itemInfoWrap}>
+                                <Text style={styles.itemName} numberOfLines={1}>
+                                  {sp.name}
+                                </Text>
+                                <Text style={styles.itemBreadcrumb} numberOfLines={1}>
+                                  Thuộc Workspace: {sp.workspaceName}
+                                </Text>
+                              </View>
+                              <ChevronRight size={18} color="#8C9BAB" />
+                            </TouchableOpacity>
+                          </React.Fragment>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Matching Tasks */}
+                  {searchedTasks.length > 0 && (
+                    <View style={styles.searchGroup}>
+                      <View style={styles.searchGroupHeader}>
+                        <CheckSquare size={16} color="#36B37E" />
+                        <Text style={styles.searchGroupTitle}>
+                          Công việc ({searchedTasks.length})
+                        </Text>
+                      </View>
+                      <View style={styles.searchCardGroup}>
+                        {searchedTasks.map((item, idx) => {
+                          const badge = getStatusBadge(item.task.status);
+                          return (
+                            <React.Fragment key={`task-${item.task.id}`}>
+                              {idx > 0 && <View style={styles.groupDivider} />}
+                              <TouchableOpacity
+                                style={styles.searchItemRow}
+                                activeOpacity={0.75}
+                                onPress={() => handleOpenSpace(item.task.spaceId)}
+                              >
+                                <View
+                                  style={[
+                                    styles.itemIconWrap,
+                                    { backgroundColor: '#1C2127', borderWidth: 1, borderColor: '#282E33' },
+                                  ]}
+                                >
+                                  <CheckSquare size={18} color="#579DFF" />
+                                </View>
+                                <View style={styles.itemInfoWrap}>
+                                  <View style={styles.itemNameRow}>
+                                    <Text style={styles.itemName} numberOfLines={1}>
+                                      {item.task.title}
+                                    </Text>
+                                    <View
+                                      style={[
+                                        styles.taskStatusBadge,
+                                        { backgroundColor: badge.bg },
+                                      ]}
+                                    >
+                                      <Text
+                                        style={[
+                                          styles.taskStatusText,
+                                          { color: badge.text },
+                                        ]}
+                                      >
+                                        {badge.label}
+                                      </Text>
+                                    </View>
+                                  </View>
+                                  <Text style={styles.itemBreadcrumb} numberOfLines={1}>
+                                    {item.spaceName} • {item.workspaceName}
+                                  </Text>
+                                </View>
+                                <ChevronRight size={18} color="#8C9BAB" />
+                              </TouchableOpacity>
+                            </React.Fragment>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  )}
+                </>
+              )}
             </View>
           ) : (
-            <View style={styles.workspacesList}>
-              {filteredWorkspaces.map((w) => (
+            /* ================= NORMAL HOME VIEW ================= */
+            <>
+              {/* Quick Access Spaces Row */}
+              {allSpacesList.length > 0 && (
+                <View style={styles.spacesSection}>
+                  <Text style={styles.sectionTitle}>Không gian (Spaces) liên quan</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.quickAccessScroll}
+                  >
+                    {allSpacesList.map((sp, idx) => (
+                      <TouchableOpacity
+                        key={sp.id}
+                        style={styles.quickCard}
+                        activeOpacity={0.75}
+                        onPress={() => handleOpenSpace(sp.id)}
+                      >
+                        <View
+                          style={[
+                            styles.quickCardIconWrap,
+                            {
+                              backgroundColor: idx % 2 === 0 ? '#E65100' : '#6554C0',
+                            },
+                          ]}
+                        >
+                          <JiraSlidersIcon size={18} color="#FFFFFF" />
+                        </View>
+                        <View style={styles.quickCardTextWrap}>
+                          <Text style={styles.quickCardTitle} numberOfLines={1}>
+                            {sp.name}
+                          </Text>
+                          <Text style={styles.quickCardSub}>{sp.workspaceName}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* Filter Segment (Tất cả / Của tôi / Đang tham gia) */}
+              <View style={styles.segmentContainer}>
                 <TouchableOpacity
-                  key={`${w.isOwner ? 'owned' : 'joined'}-${w.id}`}
-                  style={styles.workspaceCard}
-                  activeOpacity={0.75}
-                  onPress={() => router.push(`/workspaces/${w.id}`)}
+                  style={[
+                    styles.segmentButton,
+                    activeTab === 'all' && styles.segmentButtonActive,
+                  ]}
+                  onPress={() => setActiveTab('all')}
+                  activeOpacity={0.8}
                 >
-                  <View
+                  <Text
                     style={[
-                      styles.wsIconWrap,
-                      { backgroundColor: w.isOwner ? '#1D3B6A' : '#0D3823' },
+                      styles.segmentText,
+                      activeTab === 'all' && styles.segmentTextActive,
                     ]}
                   >
-                    {w.isOwner ? (
-                      <Folder size={20} color="#579DFF" />
-                    ) : (
-                      <Users size={20} color="#57D9A3" />
-                    )}
-                  </View>
-
-                  <View style={styles.wsInfo}>
-                    <View style={styles.wsHeaderLine}>
-                      <Text style={styles.wsName} numberOfLines={1}>
-                        {w.name}
-                      </Text>
-
-                      {w.isOwner ? (
-                        <View style={styles.roleBadgeOwned}>
-                          <Crown size={10} color="#579DFF" style={{ marginRight: 3 }} />
-                          <Text style={styles.roleTextOwned}>Của tôi</Text>
-                        </View>
-                      ) : (
-                        <View style={styles.roleBadgeJoined}>
-                          <Users size={10} color="#57D9A3" style={{ marginRight: 3 }} />
-                          <Text style={styles.roleTextJoined}>Đang tham gia</Text>
-                        </View>
-                      )}
-                    </View>
-
-                    <Text style={styles.wsDesc} numberOfLines={2}>
-                      {w.description || 'Không gian làm việc nhóm'}
-                    </Text>
-
-                    <Text style={styles.wsDate}>
-                      Tạo ngày: {new Date(w.createdAt).toLocaleDateString('vi-VN')}
-                    </Text>
-                  </View>
-
-                  <ChevronRight size={18} color="#8C9BAB" />
+                    Tất cả ({allWorkspaces.length})
+                  </Text>
                 </TouchableOpacity>
-              ))}
-            </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.segmentButton,
+                    activeTab === 'owned' && styles.segmentButtonActive,
+                  ]}
+                  onPress={() => setActiveTab('owned')}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      activeTab === 'owned' && styles.segmentTextActive,
+                    ]}
+                  >
+                    Của tôi ({ownedWorkspaces.length})
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.segmentButton,
+                    activeTab === 'joined' && styles.segmentButtonActive,
+                  ]}
+                  onPress={() => setActiveTab('joined')}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      activeTab === 'joined' && styles.segmentTextActive,
+                    ]}
+                  >
+                    Đang tham gia ({joinedWorkspaces.length})
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Workspaces List */}
+              {filteredWorkspaces.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <View style={styles.emptyIconCircle}>
+                    <Layers size={36} color="#579DFF" />
+                  </View>
+                  <Text style={styles.emptyTitle}>
+                    {activeTab === 'owned'
+                      ? 'Bạn chưa tạo Workspace nào'
+                      : activeTab === 'joined'
+                      ? 'Chưa tham gia Workspace nào'
+                      : 'Chưa có Workspace nào'}
+                  </Text>
+                  <Text style={styles.emptySubtitle}>
+                    {activeTab === 'joined'
+                      ? 'Khi bạn được mời tham gia Workspace từ các thành viên khác, hãy kiểm tra tab Thông báo để chấp nhận.'
+                      : 'Bắt đầu bằng cách tạo Workspace đầu tiên để quản lý dự án và các thành viên.'}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.emptyActionBtn}
+                    onPress={() => setCreateWsModalVisible(true)}
+                    activeOpacity={0.8}
+                  >
+                    <FolderPlus size={16} color="#FFFFFF" />
+                    <Text style={styles.emptyActionBtnText}>Tạo Workspace mới</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.workspacesList}>
+                  {filteredWorkspaces.map((w) => (
+                    <TouchableOpacity
+                      key={`${w.isOwner ? 'owned' : 'joined'}-${w.id}`}
+                      style={styles.workspaceCard}
+                      activeOpacity={0.75}
+                      onPress={() => router.push(`/workspaces/${w.id}`)}
+                    >
+                      <View
+                        style={[
+                          styles.wsIconWrap,
+                          { backgroundColor: w.isOwner ? '#1D3B6A' : '#0D3823' },
+                        ]}
+                      >
+                        {w.isOwner ? (
+                          <Folder size={20} color="#579DFF" />
+                        ) : (
+                          <Users size={20} color="#57D9A3" />
+                        )}
+                      </View>
+
+                      <View style={styles.wsInfo}>
+                        <View style={styles.wsHeaderLine}>
+                          <Text style={styles.wsName} numberOfLines={1}>
+                            {w.name}
+                          </Text>
+
+                          {w.isOwner ? (
+                            <View style={styles.roleBadgeOwned}>
+                              <Crown size={10} color="#579DFF" style={{ marginRight: 3 }} />
+                              <Text style={styles.roleTextOwned}>Của tôi</Text>
+                            </View>
+                          ) : (
+                            <View style={styles.roleBadgeJoined}>
+                              <Users size={10} color="#57D9A3" style={{ marginRight: 3 }} />
+                              <Text style={styles.roleTextJoined}>Đang tham gia</Text>
+                            </View>
+                          )}
+                        </View>
+
+                        <Text style={styles.wsDesc} numberOfLines={2}>
+                          {w.description || 'Không gian làm việc nhóm'}
+                        </Text>
+
+                        <Text style={styles.wsDate}>
+                          Tạo ngày: {new Date(w.createdAt).toLocaleDateString('vi-VN')}
+                        </Text>
+                      </View>
+
+                      <ChevronRight size={18} color="#8C9BAB" />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </>
           )}
 
           <View style={{ height: 40 }} />
@@ -390,32 +630,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
   },
-  workspacePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1C2127',
-    borderWidth: 1,
-    borderColor: '#282E33',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    maxWidth: 240,
-    gap: 8,
-  },
-  workspaceIconBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#1D3B6A',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  workspacePillText: {
-    color: '#E6EDF3',
-    fontSize: 12,
-    fontWeight: '600',
-    flexShrink: 1,
-  },
   headerIconButton: {
     padding: 4,
   },
@@ -437,7 +651,113 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     color: '#E6EDF3',
-    fontSize: 15,
+    fontSize: 14,
+  },
+  clearSearchBtn: {
+    padding: 4,
+    marginLeft: 6,
+  },
+  searchResultsContainer: {
+    gap: 16,
+    paddingBottom: 20,
+  },
+  searchHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  searchResultsTitle: {
+    color: '#E6EDF3',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  matchCountBadge: {
+    backgroundColor: '#1D3B6A',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  matchCountText: {
+    color: '#579DFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  searchGroup: {
+    gap: 8,
+  },
+  searchGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  searchGroupTitle: {
+    color: '#8C9BAB',
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  searchCardGroup: {
+    backgroundColor: '#1C2127',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#282E33',
+    overflow: 'hidden',
+  },
+  searchItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+  },
+  groupDivider: {
+    height: 1,
+    backgroundColor: '#282E33',
+    marginLeft: 58,
+  },
+  itemIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  itemInfoWrap: {
+    flex: 1,
+    marginRight: 8,
+  },
+  itemNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+    marginBottom: 2,
+  },
+  itemName: {
+    color: '#E6EDF3',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  itemDesc: {
+    color: '#8C9BAB',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  itemBreadcrumb: {
+    color: '#8C9BAB',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  taskStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  taskStatusText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   spacesSection: {
     marginBottom: 16,

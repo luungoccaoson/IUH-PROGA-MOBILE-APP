@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import {
   Search,
   Plus,
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { workspaceService } from '../../services/workspace.service';
+import { recentSpacesService } from '../../services/recentSpaces.service';
 import { Workspace, Space, ClassifiedWorkspaces } from '../../types';
 import { JiraHeader } from '../../components/jira/JiraHeader';
 import { JiraSlidersIcon } from '../../components/jira/JiraIcons';
@@ -42,14 +43,27 @@ export default function SpacesScreen() {
   const { user } = useAuthStore();
 
   const [items, setItems] = useState<SpaceItemView[]>([]);
+  const [recentSpaceIds, setRecentSpaceIds] = useState<number[]>([]);
   const [favorites, setFavorites] = useState<{ [id: string]: boolean }>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [createWsModalVisible, setCreateWsModalVisible] = useState(false);
 
+  const loadRecentSpaces = useCallback(async () => {
+    const ids = await recentSpacesService.getRecentSpaceIds();
+    setRecentSpaceIds(ids);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadRecentSpaces();
+    }, [loadRecentSpaces])
+  );
+
   const loadData = useCallback(async () => {
     if (!user?.id) return;
     try {
+      loadRecentSpaces();
       let classified: ClassifiedWorkspaces = {
         ownedWorkspaces: [],
         joinedWorkspaces: [],
@@ -91,7 +105,7 @@ export default function SpacesScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user?.id]);
+  }, [user?.id, loadRecentSpaces]);
 
   useEffect(() => {
     loadData();
@@ -119,16 +133,38 @@ export default function SpacesScreen() {
     loadData();
   };
 
-  const handleItemPress = (item: SpaceItemView) => {
+  const handleItemPress = async (item: SpaceItemView) => {
     if (item.type === 'space') {
+      await recentSpacesService.addRecentSpaceId(item.id);
+      setRecentSpaceIds((prev) => [item.id, ...prev.filter((id) => id !== item.id)].slice(0, 20));
       router.push(`/spaces/${item.id}`);
     } else {
       router.push(`/workspaces/${item.id}`);
     }
   };
 
-  // Recent items: take up to 2 items
-  const recentItems = items.slice(0, 2);
+  // Recent items: hiện tối đa 3 không gian và hiển thị lên đầu đối với không gian đã xem gần nhất
+  const recentOrdered: SpaceItemView[] = [];
+
+  for (const id of recentSpaceIds) {
+    const found = items.find((item) => item.id === id);
+    if (found && !recentOrdered.some((r) => r.id === found.id)) {
+      recentOrdered.push(found);
+    }
+    if (recentOrdered.length >= 3) break;
+  }
+
+  // Nếu chưa đủ 3 không gian đã xem, bổ sung thêm các không gian có sẵn
+  if (recentOrdered.length < 3) {
+    for (const item of items) {
+      if (!recentOrdered.some((r) => r.id === item.id)) {
+        recentOrdered.push(item);
+      }
+      if (recentOrdered.length >= 3) break;
+    }
+  }
+
+  const recentItems = recentOrdered.slice(0, 3);
 
   const renderIcon = (type: 'sliders' | 'rocket' | 'folder') => {
     if (type === 'sliders') {

@@ -135,15 +135,16 @@ export const workspaceService = {
       } catch {
         workspaces = await workspaceService.getWorkspacesByOwner(userId);
       }
-      const results: { workspace: Workspace; spaces: Space[] }[] = [];
-      for (const ws of workspaces) {
-        try {
-          const spaces = await workspaceService.getSpacesByWorkspace(ws.id);
-          results.push({ workspace: ws, spaces });
-        } catch {
-          results.push({ workspace: ws, spaces: [] });
-        }
-      }
+      const results = await Promise.all(
+        workspaces.map(async (ws) => {
+          try {
+            const spaces = await workspaceService.getSpacesByWorkspace(ws.id);
+            return { workspace: ws, spaces };
+          } catch {
+            return { workspace: ws, spaces: [] };
+          }
+        })
+      );
       return results;
     } catch {
       return [];
@@ -153,36 +154,29 @@ export const workspaceService = {
   // Get all tasks across user's spaces
   getAllUserTasks: async (userId: number): Promise<{ task: Task; spaceName: string; workspaceName: string }[]> => {
     try {
-      let workspaces: Workspace[] = [];
-      try {
-        const classified = await workspaceService.getClassifiedWorkspaces(userId);
-        workspaces = [...classified.ownedWorkspaces, ...classified.joinedWorkspaces];
-      } catch {
-        workspaces = await workspaceService.getWorkspacesByOwner(userId);
-      }
+      const userSpaces = await workspaceService.getAllUserSpaces(userId);
       const allTasks: { task: Task; spaceName: string; workspaceName: string }[] = [];
 
-      for (const ws of workspaces) {
-        try {
-          const spaces = await workspaceService.getSpacesByWorkspace(ws.id);
-          for (const sp of spaces) {
-            try {
-              const tasks = await workspaceService.getTasksBySpace(sp.id);
-              for (const t of tasks) {
-                allTasks.push({
-                  task: t,
-                  spaceName: sp.name,
-                  workspaceName: ws.name,
-                });
+      await Promise.all(
+        userSpaces.map(async (group) => {
+          await Promise.all(
+            group.spaces.map(async (sp) => {
+              try {
+                const tasks = await workspaceService.getTasksBySpace(sp.id);
+                for (const t of tasks) {
+                  allTasks.push({
+                    task: t,
+                    spaceName: sp.name,
+                    workspaceName: group.workspace.name,
+                  });
+                }
+              } catch {
+                // ignore
               }
-            } catch {
-              // ignore
-            }
-          }
-        } catch {
-          // ignore
-        }
-      }
+            })
+          );
+        })
+      );
       return allTasks;
     } catch {
       return [];

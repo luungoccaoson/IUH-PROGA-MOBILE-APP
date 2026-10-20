@@ -40,6 +40,7 @@ import { CreateTaskModal } from '../../components/CreateTaskModal';
 import { SpaceModal } from '../../components/SpaceModal';
 import { AddSpaceMemberModal } from '../../components/AddSpaceMemberModal';
 import { KanbanBoard } from '../../components/KanbanBoard';
+import { recentSpacesService } from '../../services/recentSpaces.service';
 
 type SubTabType = 'overview' | 'tasks' | 'kanban' | 'members';
 
@@ -110,6 +111,7 @@ export default function SpaceDetailScreen() {
 
       if (spaceData) {
         setSpace(spaceData);
+        recentSpacesService.addRecentSpaceId(idNum);
         if (spaceData.workspaceId) {
           wsData = await workspaceService.getWorkspaceById(spaceData.workspaceId).catch(() => null);
           setWorkspace(wsData);
