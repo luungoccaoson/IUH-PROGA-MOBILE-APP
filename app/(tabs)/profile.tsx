@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { User, LogOut, Server, Save, RefreshCw, ShieldCheck } from 'lucide-react-native';
+import { User, LogOut, Server, Save, RefreshCw, ShieldCheck, ArrowLeft } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { configService } from '../../services/config';
 
@@ -36,8 +36,21 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* User Info Card */}
+    <View style={styles.container}>
+      <View style={styles.topNav}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => router.back()}
+          activeOpacity={0.7}
+        >
+          <ArrowLeft size={22} color="#E6EDF3" />
+        </TouchableOpacity>
+        <Text style={styles.topNavTitle}>Tài Khoản & Cài Đặt</Text>
+        <View style={{ width: 36 }} />
+      </View>
+
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        {/* User Info Card */}
       <View style={styles.card}>
         <View style={styles.avatarLarge}>
           <Text style={styles.avatarText}>
@@ -99,37 +112,55 @@ export default function ProfileScreen() {
         <LogOut size={18} color="#D93025" />
         <Text style={styles.logoutBtnText}>ĐĂNG XUẤT TÀI KHOẢN</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F6F5EF',
+    backgroundColor: '#101214',
+  },
+  topNav: {
+    height: 56,
+    backgroundColor: '#101214',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#22272B',
+  },
+  backBtn: {
+    padding: 6,
+  },
+  topNavTitle: {
+    color: '#E6EDF3',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  scroll: {
+    flex: 1,
+    backgroundColor: '#101214',
   },
   content: {
     padding: 16,
     gap: 14,
   },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1C2127',
     borderRadius: 20,
-    padding: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#22272B',
+    padding: 20,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
   avatarLarge: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#111827',
+    backgroundColor: '#5E4DB2',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
@@ -142,18 +173,18 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#111827',
+    color: '#E6EDF3',
   },
   userEmail: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#8C9BAB',
     marginTop: 2,
   },
   roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#E6F4EA',
+    backgroundColor: '#1D3B6A',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
@@ -162,7 +193,7 @@ const styles = StyleSheet.create({
   roleText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#137333',
+    color: '#579DFF',
     letterSpacing: 0.5,
   },
   cardHeader: {
@@ -175,24 +206,26 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#111827',
+    color: '#E6EDF3',
   },
   cardDesc: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#8C9BAB',
     lineHeight: 18,
     alignSelf: 'flex-start',
     marginBottom: 14,
   },
   successBox: {
-    backgroundColor: '#E6F4EA',
+    backgroundColor: '#1C3829',
     borderRadius: 10,
     padding: 10,
     width: '100%',
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#22593D',
   },
   successText: {
-    color: '#137333',
+    color: '#57D9A3',
     fontSize: 12,
     fontWeight: '700',
     textAlign: 'center',
@@ -205,18 +238,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#4B5563',
+    color: '#8C9BAB',
     letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: '#F6F5EF',
+    backgroundColor: '#161A1D',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#282E33',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 13,
-    color: '#111827',
+    color: '#E6EDF3',
   },
   btnRow: {
     flexDirection: 'row',
@@ -229,16 +262,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#F6F5EF',
+    backgroundColor: '#161A1D',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#282E33',
     borderRadius: 12,
     paddingVertical: 10,
   },
   resetBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#4B5563',
+    color: '#8C9BAB',
   },
   saveBtn: {
     flex: 1,
@@ -246,14 +279,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#111827',
+    backgroundColor: '#1D3B6A',
     borderRadius: 12,
     paddingVertical: 10,
   },
   saveBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#579DFF',
   },
   logoutBtn: {
     flexDirection: 'row',
