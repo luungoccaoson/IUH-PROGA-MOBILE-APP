@@ -50,23 +50,13 @@ export default function RootLayout() {
         <Stack.Screen
           name="workspaces/[id]"
           options={{
-            headerShown: true,
-            title: 'Chi Tiết Workspace',
-            headerBackTitle: 'Quay lại',
-            headerStyle: { backgroundColor: '#F6F5EF' },
-            headerTintColor: '#111827',
-            headerTitleStyle: { fontWeight: '700' },
+            headerShown: false,
           }}
         />
         <Stack.Screen
           name="spaces/[spaceId]"
           options={{
-            headerShown: true,
-            title: 'Chi Tiết Space',
-            headerBackTitle: 'Quay lại',
-            headerStyle: { backgroundColor: '#F6F5EF' },
-            headerTintColor: '#111827',
-            headerTitleStyle: { fontWeight: '700' },
+            headerShown: false,
           }}
         />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />

@@ -128,7 +128,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           <View style={styles.formGroup}>
             <Text style={styles.label}>TRẠNG THÁI BAN ĐẦU</Text>
             <View style={styles.optionRow}>
-              {(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'] as TaskStatus[]).map((s) => (
+              {(['TODO', 'IN_PROGRESS', 'DONE'] as TaskStatus[]).map((s) => (
                 <TouchableOpacity
                   key={s}
                   style={[

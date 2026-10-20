@@ -1,103 +1,244 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+  StatusBar,
+  Alert,
+  Image,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Settings, Plus, ListTodo, KanbanSquare, History, CheckCircle2, Clock, Calendar, User } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  Settings,
+  Plus,
+  ListTodo,
+  KanbanSquare,
+  BarChart2,
+  Users,
+  CheckCircle2,
+  Clock,
+  Calendar,
+  AlertCircle,
+  SquareCheck,
+  Building,
+  Crown,
+  Shield,
+  UserPlus,
+  Mail,
+} from 'lucide-react-native';
+import { useAuthStore } from '../../stores/useAuthStore';
 import { workspaceService } from '../../services/workspace.service';
+import { userService } from '../../services/user.service';
 import { Space, Task, TaskStatus, Workspace } from '../../types';
-import { DonutChart } from '../../components/DonutChart';
-import { TaskItemCard } from '../../components/TaskItemCard';
 import { CreateTaskModal } from '../../components/CreateTaskModal';
 import { SpaceModal } from '../../components/SpaceModal';
+import { AddSpaceMemberModal } from '../../components/AddSpaceMemberModal';
+import { KanbanBoard } from '../../components/KanbanBoard';
 
-type SubTabType = 'overview' | 'tasks' | 'kanban';
+type SubTabType = 'overview' | 'tasks' | 'kanban' | 'members';
+
+export interface SpaceMemberDetail {
+  id: number;
+  username: string;
+  fullName: string;
+  email: string;
+  avatarUrl?: string;
+  roleId: number;
+  roleName: string;
+  status: string;
+  joinedAt?: string;
+  assignedTasksCount: number;
+  completedTasksCount: number;
+  isOwner: boolean;
+}
 
 export default function SpaceDetailScreen() {
   const { spaceId } = useLocalSearchParams();
   const router = useRouter();
+  const { user } = useAuthStore();
   const idNum = parseInt(spaceId as string, 10);
 
   const [activeTab, setActiveTab] = useState<SubTabType>('overview');
   const [space, setSpace] = useState<Space | null>(null);
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [members, setMembers] = useState<SpaceMemberDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
   // Modals state
   const [createTaskVisible, setCreateTaskVisible] = useState(false);
   const [editSpaceVisible, setEditSpaceVisible] = useState(false);
+  const [addMemberModalVisible, setAddMemberModalVisible] = useState(false);
 
-  // Filters state
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const getInitials = (name?: string, email?: string) => {
+    const text = name || email || 'User';
+    const parts = text.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return text.substring(0, 2).toUpperCase();
+  };
 
-  const loadSpaceData = useCallback(async () => {
+  const loadData = useCallback(async () => {
     if (!idNum) return;
     try {
-      setError('');
-      // Load tasks
-      const taskList = await workspaceService.getTasksBySpace(idNum);
-      setTasks(taskList);
+      const [spaceData, taskList] = await Promise.all([
+        workspaceService.getSpaceById(idNum).catch(async () => {
+          // fallback search in spaces
+          if (!user?.id) return null;
+          const userSpaces = await workspaceService.getAllUserSpaces(user.id);
+          for (const item of userSpaces) {
+            const found = item.spaces.find((s) => s.id === idNum);
+            if (found) return found;
+          }
+          return null;
+        }),
+        workspaceService.getTasksBySpace(idNum).catch(() => []),
+      ]);
 
-      // Load space details via workspace lookup or fallback mock
-      const spacesList = await workspaceService.getSpacesByWorkspace(1).catch(() => []);
-      const current = spacesList.find((s) => s.id === idNum) || {
-        id: idNum,
-        workspaceId: 1,
-        name: `Space #${idNum}`,
-        startDate: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-      };
-      setSpace(current);
-    } catch (err: any) {
-      console.error('Error loading space page:', err);
-      setError('Không thể tải dữ liệu Space.');
+      let wsData: Workspace | null = null;
+      let rawSpaceMembers: any[] = [];
+      let rawWsMembers: any[] = [];
+
+      if (spaceData) {
+        setSpace(spaceData);
+        if (spaceData.workspaceId) {
+          wsData = await workspaceService.getWorkspaceById(spaceData.workspaceId).catch(() => null);
+          setWorkspace(wsData);
+          rawWsMembers = await workspaceService.getWorkspaceMembers(spaceData.workspaceId).catch(() => []);
+        }
+        rawSpaceMembers = await workspaceService.getSpaceMembers(idNum).catch(() => []);
+      }
+
+      const rawMembers = rawSpaceMembers.length > 0 ? rawSpaceMembers : rawWsMembers;
+
+      const memberMetaMap = new Map<number, { roleId: number; status: string; joinedAt?: string }>();
+
+      (rawMembers || []).forEach((m: any) => {
+        const uid = m.id?.userId ?? m.userId ?? (typeof m.id === 'number' ? m.id : null);
+        if (uid) {
+          memberMetaMap.set(uid, {
+            roleId: m.roleId ?? 3,
+            status: m.status || 'ACCEPTED',
+            joinedAt: m.joinedAt,
+          });
+        }
+      });
+
+      // Always ensure Workspace Owner is included
+      if (wsData?.ownerId && !memberMetaMap.has(wsData.ownerId)) {
+        memberMetaMap.set(wsData.ownerId, {
+          roleId: 1,
+          status: 'ACCEPTED',
+        });
+      }
+
+      // Always ensure current user is included if in space
+      if (user?.id && !memberMetaMap.has(user.id)) {
+        memberMetaMap.set(user.id, {
+          roleId: wsData?.ownerId === user.id ? 1 : 3,
+          status: 'ACCEPTED',
+        });
+      }
+
+      const userIds = Array.from(memberMetaMap.keys());
+
+      const userProfiles = await Promise.all(
+        userIds.map(async (uid) => {
+          if (user && user.id === uid) return user;
+          try {
+            return await userService.getUserById(uid);
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      const parsedMembers: SpaceMemberDetail[] = userIds.map((uid, idx) => {
+        const profile = userProfiles[idx];
+        const meta = memberMetaMap.get(uid);
+        const isOwner = wsData?.ownerId === uid || meta?.roleId === 1;
+
+        const assignedTasks = taskList.filter((t: any) => t.assigneeId === uid || t.ownerId === uid);
+        const completedTasks = assignedTasks.filter((t) => t.status === 'DONE');
+
+        const fullName = profile?.fullName || profile?.displayName || profile?.username || `Thành viên #${uid}`;
+        const username = profile?.username || `user_${uid}`;
+        const email = profile?.email || '';
+        const avatarUrl = profile?.avatarUrl;
+
+        let roleName = 'Thành viên';
+        if (isOwner) {
+          roleName = 'Owner';
+        } else if (meta?.roleId === 2) {
+          roleName = 'Project Manager';
+        }
+
+        return {
+          id: uid,
+          username,
+          fullName,
+          email,
+          avatarUrl,
+          roleId: meta?.roleId || (isOwner ? 1 : 3),
+          roleName,
+          status: meta?.status || 'ACCEPTED',
+          joinedAt: meta?.joinedAt,
+          assignedTasksCount: assignedTasks.length,
+          completedTasksCount: completedTasks.length,
+          isOwner,
+        };
+      });
+
+      setMembers(parsedMembers);
+      setTasks(taskList);
+    } catch (err) {
+      console.log('Error loading space detail:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [idNum]);
+  }, [idNum, user?.id]);
 
   useEffect(() => {
-    loadSpaceData();
-  }, [loadSpaceData]);
+    loadData();
+  }, [loadData]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadSpaceData();
+    loadData();
   };
 
-  // Mock tasks fallback if no real tasks from BE yet
-  const mockTasks: Task[] = [
-    { id: 1, spaceId: idNum, title: 'Thiết kế sơ đồ ERD & PostgreSQL Schema', status: 'DONE', priority: 'HIGH', ownerName: 'Son Luu', dueDate: '2026-07-05', createdAt: '2026-07-01' },
-    { id: 2, spaceId: idNum, title: 'Xây dựng Auth-Service & Cấu hình Security JWT', status: 'IN_PROGRESS', priority: 'URGENT', ownerName: 'Duy Dev', dueDate: '2026-07-12', createdAt: '2026-07-06' },
-    { id: 3, spaceId: idNum, title: 'Xây dựng Giao diện Mobile Expo SDK 54', status: 'IN_PROGRESS', priority: 'HIGH', ownerName: 'Son Luu', dueDate: '2026-08-10', createdAt: '2026-08-01' },
-    { id: 4, spaceId: idNum, title: 'Tích hợp Requirement Agent tự động phân rã Task', status: 'TODO', priority: 'MEDIUM', ownerName: 'Hoa Tester', dueDate: '2026-08-15', createdAt: '2026-08-02' },
-  ];
-
-  const tasksToDisplay = tasks.length > 0 ? tasks : mockTasks;
-
-  // Status counts for Donut Chart
-  const todoCount = tasksToDisplay.filter((t) => t.status === 'TODO').length;
-  const inProgressCount = tasksToDisplay.filter((t) => t.status === 'IN_PROGRESS').length;
-  const reviewCount = tasksToDisplay.filter((t) => t.status === 'REVIEW').length;
-  const doneCount = tasksToDisplay.filter((t) => t.status === 'DONE').length;
-
-  // Filter tasks for Task Tab
-  const filteredTasks = tasksToDisplay.filter((t) => {
-    if (statusFilter === 'ALL') return true;
-    return t.status === statusFilter;
-  });
-
-  const handleStatusChange = async (taskId: number, newStatus: TaskStatus) => {
-    // Optimistic UI update
+  const handleUpdateTaskStatus = async (taskId: number, newStatus: TaskStatus) => {
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
     );
     try {
       await workspaceService.updateTaskStatus(taskId, newStatus);
     } catch (e) {
-      console.error('Failed to update status on server:', e);
+      Alert.alert('Lỗi', 'Không thể cập nhật trạng thái nhiệm vụ.');
+      loadData();
     }
+  };
+
+  const handleToggleTaskStatus = async (taskId: number, currentStatus: TaskStatus) => {
+    let nextStatus: TaskStatus = 'TODO';
+    if (currentStatus === 'TODO') {
+      nextStatus = 'IN_PROGRESS';
+    } else if (currentStatus === 'IN_PROGRESS') {
+      nextStatus = 'DONE';
+    } else {
+      nextStatus = 'TODO';
+    }
+    await handleUpdateTaskStatus(taskId, nextStatus);
   };
 
   const handleCreateTask = async (data: {
@@ -114,13 +255,6 @@ export default function SpaceDetailScreen() {
     setTasks((prev) => [newTask, ...prev]);
   };
 
-  const handleDeleteTask = async (taskId: number) => {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    try {
-      await workspaceService.deleteTask(taskId);
-    } catch (e) {}
-  };
-
   const handleEditSpace = async (name: string, startDate?: string, endDate?: string) => {
     if (!space) return;
     const updated = await workspaceService.updateSpace(space.id, {
@@ -134,261 +268,528 @@ export default function SpaceDetailScreen() {
 
   const handleDeleteSpace = async () => {
     if (!space) return;
-    await workspaceService.deleteSpace(space.id);
-    router.back();
+    Alert.alert('Xác nhận xóa', `Bạn có chắc muốn xóa không gian "${space.name}"?`, [
+      { text: 'Hủy', style: 'cancel' },
+      {
+        text: 'Xóa',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await workspaceService.deleteSpace(space.id);
+            router.back();
+          } catch (e) {
+            Alert.alert('Lỗi', 'Không thể xóa Không gian này.');
+          }
+        },
+      },
+    ]);
   };
+
+  // Task metrics calculation (Only TODO, IN_PROGRESS, DONE)
+  const totalTasks = tasks.length;
+  const doneTasks = tasks.filter((t) => t.status === 'DONE').length;
+  const inProgressTasks = tasks.filter((t) => t.status === 'IN_PROGRESS').length;
+  const todoTasks = tasks.filter((t) => t.status === 'TODO').length;
+  const percentComplete = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+
+  const filteredTasks = tasks.filter((t) => {
+    if (statusFilter === 'ALL') return true;
+    return t.status === statusFilter;
+  });
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#111827" />
-        <Text style={styles.loadingText}>Đang tải chi tiết Space...</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="light-content" backgroundColor="#101214" />
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#579DFF" />
+          <Text style={styles.loadingText}>Đang tải chi tiết Không gian...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header bar */}
-      <View style={styles.topHeader}>
-        <View style={styles.spaceTitleRow}>
-          <View style={styles.initialsBadge}>
-            <Text style={styles.initialsText}>
-              {space?.name ? space.name.substring(0, 2).toUpperCase() : 'SP'}
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#101214" />
+      <View style={styles.container}>
+        {/* Header Bar */}
+        <View style={styles.headerBar}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={22} color="#E6EDF3" />
+          </TouchableOpacity>
+
+          <View style={styles.headerTitleWrap}>
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {space?.name || `Space #${idNum}`}
             </Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.spaceName}>{space?.name}</Text>
-            {!!space?.startDate && (
-              <Text style={styles.spaceDateText}>
-                {new Date(space.startDate).toLocaleDateString('vi-VN')} -{' '}
-                {space.endDate ? new Date(space.endDate).toLocaleDateString('vi-VN') : 'Không hạn'}
+            {workspace && (
+              <Text style={styles.headerSub} numberOfLines={1}>
+                {workspace.name}
               </Text>
             )}
           </View>
+
+          <TouchableOpacity
+            style={styles.settingsBtn}
+            onPress={() => setEditSpaceVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Settings size={20} color="#8C9BAB" />
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.settingsBtn} onPress={() => setEditSpaceVisible(true)}>
-          <Settings size={18} color="#4B5563" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Sub Tabs Navigation */}
-      <View style={styles.subTabBar}>
-        <TouchableOpacity
-          style={[styles.subTabItem, activeTab === 'overview' && styles.subTabActive]}
-          onPress={() => setActiveTab('overview')}
-        >
-          <History size={14} color={activeTab === 'overview' ? '#111827' : '#6B7280'} />
-          <Text style={[styles.subTabText, activeTab === 'overview' && styles.subTabTextActive]}>
-            Tổng quan
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.subTabItem, activeTab === 'tasks' && styles.subTabActive]}
-          onPress={() => setActiveTab('tasks')}
-        >
-          <ListTodo size={14} color={activeTab === 'tasks' ? '#111827' : '#6B7280'} />
-          <Text style={[styles.subTabText, activeTab === 'tasks' && styles.subTabTextActive]}>
-            Danh sách task
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.subTabItem, activeTab === 'kanban' && styles.subTabActive]}
-          onPress={() => setActiveTab('kanban')}
-        >
-          <KanbanSquare size={14} color={activeTab === 'kanban' ? '#111827' : '#6B7280'} />
-          <Text style={[styles.subTabText, activeTab === 'kanban' && styles.subTabTextActive]}>
-            Bảng Kanban
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* TAB CONTENTS */}
-      <ScrollView
-        contentContainerStyle={styles.tabContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        {/* TAB 1: OVERVIEW */}
-        {activeTab === 'overview' && (
-          <View style={styles.tabView}>
-            {/* 4 Metric cards */}
-            <View style={styles.metricsGrid}>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>ĐÃ HOÀN THÀNH</Text>
-                <Text style={styles.metricValue}>{doneCount}</Text>
-                <Text style={styles.metricSub}>Trong 7 ngày qua</Text>
-              </View>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>ĐANG THỰC HIỆN</Text>
-                <Text style={[styles.metricValue, { color: '#1A73E8' }]}>{inProgressCount}</Text>
-                <Text style={styles.metricSub}>Đang tiến hành</Text>
-              </View>
-            </View>
-
-            {/* Donut Chart Component */}
-            <View style={styles.cardBox}>
-              <Text style={styles.cardBoxTitle}>TỔNG QUAN TRẠNG THÁI CÔNG VIỆC</Text>
-              <DonutChart
-                todo={todoCount}
-                inProgress={inProgressCount}
-                review={reviewCount}
-                done={doneCount}
+        {/* Sub-tabs Bar */}
+        <View style={styles.subTabBarWrapper}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.subTabBarContainer}
+          >
+            <TouchableOpacity
+              style={[styles.subTabItem, activeTab === 'overview' && styles.subTabActive]}
+              onPress={() => setActiveTab('overview')}
+              activeOpacity={0.8}
+            >
+              <BarChart2
+                size={16}
+                color={activeTab === 'overview' ? '#579DFF' : '#8C9BAB'}
               />
-            </View>
+              <Text
+                style={[
+                  styles.subTabText,
+                  activeTab === 'overview' && styles.subTabTextActive,
+                ]}
+              >
+                Tổng quan
+              </Text>
+            </TouchableOpacity>
 
-            {/* Recent Activities Log */}
-            <View style={styles.cardBox}>
-              <Text style={styles.cardBoxTitle}>HOẠT ĐỘNG GẦN ĐÂY</Text>
-
-              <View style={styles.activityItem}>
-                <View style={styles.activityAvatar}>
-                  <Text style={styles.activityAvatarText}>SL</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.activityText}>
-                    <Text style={{ fontWeight: '700' }}>Son Luu</Text> đã chuyển trạng thái{' '}
-                    <Text style={{ fontWeight: '700' }}>TASK-2</Text> sang IN PROGRESS
-                  </Text>
-                  <Text style={styles.activityTime}>36 phút trước</Text>
-                </View>
+            <TouchableOpacity
+              style={[styles.subTabItem, activeTab === 'tasks' && styles.subTabActive]}
+              onPress={() => setActiveTab('tasks')}
+              activeOpacity={0.8}
+            >
+              <ListTodo
+                size={16}
+                color={activeTab === 'tasks' ? '#579DFF' : '#8C9BAB'}
+              />
+              <Text
+                style={[
+                  styles.subTabText,
+                  activeTab === 'tasks' && styles.subTabTextActive,
+                ]}
+              >
+                Công việc
+              </Text>
+              <View style={[styles.tabBadge, activeTab === 'tasks' && styles.tabBadgeActive]}>
+                <Text style={[styles.tabBadgeText, activeTab === 'tasks' && styles.tabBadgeTextActive]}>
+                  {totalTasks}
+                </Text>
               </View>
+            </TouchableOpacity>
 
-              <View style={styles.activityItem}>
-                <View style={styles.activityAvatar}>
-                  <Text style={styles.activityAvatarText}>DD</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.activityText}>
-                    <Text style={{ fontWeight: '700' }}>Duy Dev</Text> đã tạo task mới{' '}
-                    <Text style={{ fontWeight: '700' }}>TASK-3: Giao diện Mobile Expo SDK 54</Text>
-                  </Text>
-                  <Text style={styles.activityTime}>2 giờ trước</Text>
-                </View>
+            <TouchableOpacity
+              style={[styles.subTabItem, activeTab === 'kanban' && styles.subTabActive]}
+              onPress={() => setActiveTab('kanban')}
+              activeOpacity={0.8}
+            >
+              <KanbanSquare
+                size={16}
+                color={activeTab === 'kanban' ? '#579DFF' : '#8C9BAB'}
+              />
+              <Text
+                style={[
+                  styles.subTabText,
+                  activeTab === 'kanban' && styles.subTabTextActive,
+                ]}
+              >
+                Bảng Kanban
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.subTabItem, activeTab === 'members' && styles.subTabActive]}
+              onPress={() => setActiveTab('members')}
+              activeOpacity={0.8}
+            >
+              <Users
+                size={16}
+                color={activeTab === 'members' ? '#579DFF' : '#8C9BAB'}
+              />
+              <Text
+                style={[
+                  styles.subTabText,
+                  activeTab === 'members' && styles.subTabTextActive,
+                ]}
+              >
+                Thành viên
+              </Text>
+              <View style={[styles.tabBadge, activeTab === 'members' && styles.tabBadgeActive]}>
+                <Text style={[styles.tabBadgeText, activeTab === 'members' && styles.tabBadgeTextActive]}>
+                  {members.length}
+                </Text>
               </View>
-            </View>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+
+        {/* TAB CONTENTS */}
+        {activeTab === 'kanban' ? (
+          <View style={styles.kanbanTabContainer}>
+            <KanbanBoard
+              tasks={tasks}
+              onUpdateStatus={handleUpdateTaskStatus}
+            />
           </View>
-        )}
+        ) : (
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor="#579DFF"
+                colors={['#579DFF']}
+              />
+            }
+          >
+          {/* TAB 1: TỔNG QUAN (OVERVIEW) */}
+          {activeTab === 'overview' && (
+            <View style={styles.tabSection}>
+              {/* Progress Card */}
+              <View style={styles.cardBox}>
+                <View style={styles.progressHeader}>
+                  <Text style={styles.cardBoxTitle}>TIẾN ĐỘ HOÀN THÀNH</Text>
+                  <Text style={styles.progressPercentText}>{percentComplete}%</Text>
+                </View>
 
-        {/* TAB 2: TASKS LIST */}
-        {activeTab === 'tasks' && (
-          <View style={styles.tabView}>
-            {/* Action & Filter Bar */}
-            <View style={styles.filterActionRow}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChips}>
-                {(['ALL', 'TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'] as string[]).map((f) => (
+                <View style={styles.progressBarTrack}>
+                  <View
+                    style={[styles.progressBarFill, { width: `${percentComplete}%` }]}
+                  />
+                </View>
+
+                <Text style={styles.progressSubText}>
+                  Đã hoàn tất {doneTasks} trên tổng số {totalTasks} nhiệm vụ
+                </Text>
+              </View>
+
+              {/* 3 Metric Cards Grid (TODO, IN_PROGRESS, DONE) */}
+              <View style={styles.metricsGrid}>
+                <View style={styles.metricCard}>
+                  <Text style={styles.metricLabel}>CẦN LÀM</Text>
+                  <Text style={[styles.metricValue, { color: '#8C9BAB' }]}>
+                    {todoTasks}
+                  </Text>
+                  <Text style={styles.metricSub}>Trạng thái TODO</Text>
+                </View>
+
+                <View style={styles.metricCard}>
+                  <Text style={styles.metricLabel}>ĐANG THỰC HIỆN</Text>
+                  <Text style={[styles.metricValue, { color: '#579DFF' }]}>
+                    {inProgressTasks}
+                  </Text>
+                  <Text style={styles.metricSub}>Trạng thái IN PROGRESS</Text>
+                </View>
+
+                <View style={styles.metricCard}>
+                  <Text style={styles.metricLabel}>ĐÃ HOÀN THÀNH</Text>
+                  <Text style={[styles.metricValue, { color: '#57D9A3' }]}>
+                    {doneTasks}
+                  </Text>
+                  <Text style={styles.metricSub}>Trạng thái DONE</Text>
+                </View>
+              </View>
+
+              {/* Space Info Card */}
+              <View style={styles.cardBox}>
+                <Text style={styles.cardBoxTitle}>THÔNG TIN KHÔNG GIAN</Text>
+
+                <View style={styles.infoRow}>
+                  <Calendar size={16} color="#8C9BAB" style={{ marginRight: 10 }} />
+                  <Text style={styles.infoLabel}>Thời gian:</Text>
+                  <Text style={styles.infoValue}>
+                    {space?.startDate
+                      ? new Date(space.startDate).toLocaleDateString('vi-VN')
+                      : 'Chưa đặt'}{' '}
+                    →{' '}
+                    {space?.endDate
+                      ? new Date(space.endDate).toLocaleDateString('vi-VN')
+                      : 'Không thời hạn'}
+                  </Text>
+                </View>
+
+                {workspace && (
+                  <View style={styles.infoRow}>
+                    <Building size={16} color="#8C9BAB" style={{ marginRight: 10 }} />
+                    <Text style={styles.infoLabel}>Workspace:</Text>
+                    <Text style={styles.infoValue}>{workspace.name}</Text>
+                  </View>
+                )}
+
+                <View style={styles.infoRow}>
+                  <Clock size={16} color="#8C9BAB" style={{ marginRight: 10 }} />
+                  <Text style={styles.infoLabel}>Khởi tạo ngày:</Text>
+                  <Text style={styles.infoValue}>
+                    {space?.createdAt
+                      ? new Date(space.createdAt).toLocaleDateString('vi-VN')
+                      : 'N/A'}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Quick Action Button */}
+              <TouchableOpacity
+                style={styles.primaryActionBtn}
+                onPress={() => setCreateTaskVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Plus size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.primaryActionBtnText}>Thêm công việc vào Space</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* TAB 2: CÔNG VIỆC (TASKS LIST) */}
+          {activeTab === 'tasks' && (
+            <View style={styles.tabSection}>
+              {/* Filter Pills */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterScroll}
+              >
+                {[
+                  { key: 'ALL', label: `Tất cả (${totalTasks})` },
+                  { key: 'TODO', label: `Cần làm (${todoTasks})` },
+                  { key: 'IN_PROGRESS', label: `Đang làm (${inProgressTasks})` },
+                  { key: 'DONE', label: `Đã xong (${doneTasks})` },
+                ].map((f) => (
                   <TouchableOpacity
-                    key={f}
-                    style={[styles.filterChip, statusFilter === f && styles.filterChipActive]}
-                    onPress={() => setStatusFilter(f)}
+                    key={f.key}
+                    style={[
+                      styles.filterPill,
+                      statusFilter === f.key && styles.filterPillActive,
+                    ]}
+                    onPress={() => setStatusFilter(f.key)}
                   >
-                    <Text style={[styles.filterChipText, statusFilter === f && styles.filterChipTextActive]}>
-                      {f}
+                    <Text
+                      style={[
+                        styles.filterPillText,
+                        statusFilter === f.key && styles.filterPillTextActive,
+                      ]}
+                    >
+                      {f.label}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
 
-              <TouchableOpacity style={styles.addTaskBtn} onPress={() => setCreateTaskVisible(true)}>
-                <Plus size={16} color="#FFFFFF" />
-                <Text style={styles.addTaskBtnText}>Tạo Task</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Task list view */}
-            {filteredTasks.length === 0 ? (
-              <View style={styles.emptyBox}>
-                <Text style={styles.emptyText}>Không tìm thấy task nào với bộ lọc này.</Text>
-              </View>
-            ) : (
-              filteredTasks.map((task) => (
-                <TaskItemCard
-                  key={task.id}
-                  task={task}
-                  onStatusChange={(newStatus) => handleStatusChange(task.id, newStatus)}
-                  onDelete={() => handleDeleteTask(task.id)}
-                />
-              ))
-            )}
-          </View>
-        )}
-
-        {/* TAB 3: KANBAN BOARD */}
-        {activeTab === 'kanban' && (
-          <View style={styles.tabView}>
-            <View style={styles.kanbanHeaderRow}>
-              <Text style={styles.kanbanNote}>
-                * Chạm vào thẻ công việc để chuyển nhanh sang cột trạng thái tiếp theo.
-              </Text>
-              <TouchableOpacity style={styles.addTaskBtn} onPress={() => setCreateTaskVisible(true)}>
-                <Plus size={14} color="#FFFFFF" />
-                <Text style={styles.addTaskBtnText}>Thêm Task</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* 4 Kanban Column Blocks */}
-            {(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'] as TaskStatus[]).map((status) => {
-              const colTasks = tasksToDisplay.filter((t) => t.status === status);
-              const headerColors: Record<TaskStatus, { border: string; title: string }> = {
-                TODO: { border: '#6B7280', title: 'CẦN LÀM (TODO)' },
-                IN_PROGRESS: { border: '#1A73E8', title: 'ĐANG LÀM (IN PROGRESS)' },
-                REVIEW: { border: '#B06000', title: 'ĐANG DUYỆT (REVIEW)' },
-                DONE: { border: '#137333', title: 'ĐÃ XONG (DONE)' },
-              };
-              const colInfo = headerColors[status];
-
-              return (
-                <View key={status} style={[styles.kanbanColBox, { borderLeftColor: colInfo.border }]}>
-                  <View style={styles.kanbanColHeader}>
-                    <Text style={styles.kanbanColTitle}>{colInfo.title}</Text>
-                    <View style={styles.kanbanCountBadge}>
-                      <Text style={styles.kanbanCountText}>{colTasks.length}</Text>
-                    </View>
-                  </View>
-
-                  {colTasks.length === 0 ? (
-                    <Text style={styles.emptyColText}>Chưa có task ở cột này</Text>
-                  ) : (
-                    colTasks.map((task) => (
-                      <TaskItemCard
-                        key={task.id}
-                        task={task}
-                        onStatusChange={(newStatus) => handleStatusChange(task.id, newStatus)}
-                        onDelete={() => handleDeleteTask(task.id)}
-                      />
-                    ))
-                  )}
+              {filteredTasks.length === 0 ? (
+                <View style={styles.emptyCardBox}>
+                  <CheckCircle2 size={36} color="#579DFF" style={{ marginBottom: 10 }} />
+                  <Text style={styles.emptyCardTitle}>Không có công việc nào</Text>
+                  <Text style={styles.emptyCardSub}>
+                    Chưa có nhiệm vụ nào trong mục này. Bấm nút bên dưới để tạo mới.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.emptyCreateBtn}
+                    onPress={() => setCreateTaskVisible(true)}
+                  >
+                    <Plus size={16} color="#579DFF" style={{ marginRight: 4 }} />
+                    <Text style={styles.emptyCreateBtnText}>Thêm task</Text>
+                  </TouchableOpacity>
                 </View>
-              );
-            })}
-          </View>
+              ) : (
+                filteredTasks.map((t) => {
+                  const isDone = t.status === 'DONE';
+                  return (
+                    <TouchableOpacity
+                      key={t.id}
+                      style={styles.taskCard}
+                      activeOpacity={0.75}
+                      onPress={() => handleToggleTaskStatus(t.id, t.status)}
+                    >
+                      <TouchableOpacity
+                        style={{ marginRight: 12, padding: 2 }}
+                        onPress={() => handleToggleTaskStatus(t.id, t.status)}
+                      >
+                        <SquareCheck
+                          size={20}
+                          color={isDone ? '#579DFF' : '#8C9BAB'}
+                        />
+                      </TouchableOpacity>
+
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            styles.taskCardTitle,
+                            isDone && styles.strikeThrough,
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {t.title}
+                        </Text>
+                        <Text style={styles.taskCardSub}>
+                          #{t.id} • {t.status} • Độ ưu tiên: {t.priority || 'MEDIUM'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+
+              <TouchableOpacity
+                style={styles.primaryActionBtn}
+                onPress={() => setCreateTaskVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Plus size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.primaryActionBtnText}>Tạo công việc mới</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+
+
+          {/* TAB 4: THÀNH VIÊN (MEMBERS) */}
+          {activeTab === 'members' && (
+            <View style={styles.tabSection}>
+              <View style={styles.cardBox}>
+                <View style={styles.memberHeaderRow}>
+                  <Text style={styles.cardBoxTitle}>
+                    DANH SÁCH THÀNH VIÊN ({members.length})
+                  </Text>
+                  {space?.workspaceId ? (
+                    <TouchableOpacity
+                      style={styles.addMemberBtn}
+                      onPress={() => setAddMemberModalVisible(true)}
+                      activeOpacity={0.8}
+                    >
+                      <UserPlus size={14} color="#579DFF" />
+                      <Text style={styles.addMemberBtnText}>Thêm</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+
+                {members.length === 0 ? (
+                  <View style={styles.emptyMembersWrap}>
+                    <Users size={32} color="#8C9BAB" style={{ marginBottom: 8 }} />
+                    <Text style={styles.emptyCardSub}>
+                      Chưa có thành viên nào trong không gian này.
+                    </Text>
+                  </View>
+                ) : (
+                  members.map((m, idx) => (
+                    <View
+                      key={`member-${m.id}-${idx}`}
+                      style={[
+                        styles.memberRow,
+                        idx === members.length - 1 && { borderBottomWidth: 0 },
+                      ]}
+                    >
+                      {m.avatarUrl ? (
+                        <Image source={{ uri: m.avatarUrl }} style={styles.memberAvatarImg} />
+                      ) : (
+                        <View style={[styles.memberAvatar, m.isOwner && styles.ownerAvatar]}>
+                          <Text style={[styles.memberAvatarText, m.isOwner && styles.ownerAvatarText]}>
+                            {getInitials(m.fullName, m.email)}
+                          </Text>
+                        </View>
+                      )}
+
+                      <View style={{ flex: 1, marginRight: 8 }}>
+                        <View style={styles.memberNameLine}>
+                          <Text style={styles.memberName} numberOfLines={1}>
+                            {m.fullName}
+                          </Text>
+                          {m.isOwner ? (
+                            <View style={styles.ownerBadge}>
+                              <Crown size={11} color="#FFAB00" style={{ marginRight: 3 }} />
+                              <Text style={styles.ownerBadgeText}>Owner</Text>
+                            </View>
+                          ) : m.roleId === 2 ? (
+                            <View style={styles.pmBadge}>
+                              <Shield size={11} color="#579DFF" style={{ marginRight: 3 }} />
+                              <Text style={styles.pmBadgeText}>PM</Text>
+                            </View>
+                          ) : (
+                            <View style={styles.memberBadge}>
+                              <Text style={styles.memberBadgeText}>Member</Text>
+                            </View>
+                          )}
+                        </View>
+
+                        <Text style={styles.memberEmail} numberOfLines={1}>
+                          {m.email ? m.email : `@${m.username}`}
+                        </Text>
+
+                        <View style={styles.memberStatsRow}>
+                          <View style={styles.statDot} />
+                          <Text style={styles.memberStatsText}>
+                            {m.assignedTasksCount > 0
+                              ? `${m.assignedTasksCount} công việc (${m.completedTasksCount} hoàn thành)`
+                              : 'Chưa có công việc được giao'}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))
+                )}
+              </View>
+            </View>
+          )}
+
+            <View style={{ height: 40 }} />
+          </ScrollView>
         )}
-      </ScrollView>
 
-      {/* Modals */}
-      <CreateTaskModal
-        visible={createTaskVisible}
-        onClose={() => setCreateTaskVisible(false)}
-        onSubmit={handleCreateTask}
-      />
+        {/* Create Task Modal */}
+        <CreateTaskModal
+          visible={createTaskVisible}
+          onClose={() => setCreateTaskVisible(false)}
+          onSubmit={handleCreateTask}
+        />
 
-      <SpaceModal
-        visible={editSpaceVisible}
-        onClose={() => setEditSpaceVisible(false)}
-        onSubmit={handleEditSpace}
-        onDelete={handleDeleteSpace}
-        spaceToEdit={space}
-      />
-    </View>
+        {/* Space Edit Modal */}
+        <SpaceModal
+          visible={editSpaceVisible}
+          onClose={() => setEditSpaceVisible(false)}
+          onSubmit={handleEditSpace}
+          spaceToEdit={space}
+          onDelete={handleDeleteSpace}
+        />
+
+        {/* Add Space Member Modal */}
+        {space?.workspaceId ? (
+          <AddSpaceMemberModal
+            visible={addMemberModalVisible}
+            workspaceId={space.workspaceId}
+            spaceId={idNum}
+            existingMemberIds={members.map((m) => m.id)}
+            onClose={() => setAddMemberModalVisible(false)}
+            onMemberAdded={loadData}
+          />
+        ) : null}
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#101214',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F6F5EF',
+    backgroundColor: '#101214',
   },
   centerContainer: {
     flex: 1,
@@ -397,263 +798,480 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   loadingText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 10,
-    fontWeight: '600',
+    color: '#8C9BAB',
+    fontSize: 13,
+    marginTop: 12,
   },
-  topHeader: {
+  headerBar: {
+    height: 60,
+    backgroundColor: '#101214',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#22272B',
   },
-  spaceTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+  backBtn: {
+    padding: 6,
+    marginRight: 8,
+  },
+  headerTitleWrap: {
     flex: 1,
   },
-  initialsBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#E6F4EA',
-    borderWidth: 1,
-    borderColor: '#D1E7DD',
-    alignItems: 'center',
-    justifyContent: 'center',
+  headerTitle: {
+    color: '#E6EDF3',
+    fontSize: 17,
+    fontWeight: '700',
   },
-  initialsText: {
+  headerSub: {
+    color: '#8C9BAB',
     fontSize: 12,
-    fontWeight: '800',
-    color: '#137333',
-  },
-  spaceName: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  spaceDateText: {
-    fontSize: 10,
-    color: '#6B7280',
+    marginTop: 1,
   },
   settingsBtn: {
-    padding: 8,
-    borderRadius: 10,
-    backgroundColor: '#F6F5EF',
+    padding: 6,
   },
-  subTabBar: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+  subTabBarWrapper: {
+    backgroundColor: '#161A1D',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#22272B',
   },
-  subTabItem: {
-    flex: 1,
+  subTabBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    paddingHorizontal: 8,
+  },
+  subTabItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 6,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
   subTabActive: {
-    borderBottomColor: '#111827',
+    borderBottomColor: '#579DFF',
+    backgroundColor: 'rgba(87, 157, 255, 0.08)',
   },
   subTabText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#6B7280',
+    color: '#8C9BAB',
+    fontSize: 13,
+    fontWeight: '600',
   },
   subTabTextActive: {
-    color: '#111827',
+    color: '#579DFF',
+    fontWeight: '700',
   },
-  tabContent: {
+  tabBadge: {
+    backgroundColor: '#22272B',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 8,
+    marginLeft: 2,
+  },
+  tabBadgeActive: {
+    backgroundColor: '#1D3B6A',
+  },
+  tabBadgeText: {
+    color: '#8C9BAB',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  tabBadgeTextActive: {
+    color: '#579DFF',
+  },
+  content: {
+    flex: 1,
     padding: 16,
   },
-  tabView: {
-    gap: 14,
+  kanbanTabContainer: {
+    flex: 1,
+    paddingTop: 12,
+    paddingHorizontal: 12,
+  },
+  tabSection: {
+    gap: 16,
+  },
+  cardBox: {
+    backgroundColor: '#1C2127',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#22272B',
+  },
+  cardBoxTitle: {
+    color: '#8C9BAB',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressPercentText: {
+    color: '#57D9A3',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  progressBarTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#161A1D',
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#57D9A3',
+    borderRadius: 4,
+  },
+  progressSubText: {
+    color: '#8C9BAB',
+    fontSize: 12,
   },
   metricsGrid: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   metricCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 14,
+    backgroundColor: '#1C2127',
+    borderRadius: 12,
+    padding: 10,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#22272B',
   },
   metricLabel: {
-    fontSize: 9,
+    color: '#8C9BAB',
+    fontSize: 10,
     fontWeight: '800',
-    color: '#6B7280',
     letterSpacing: 0.5,
   },
   metricValue: {
     fontSize: 22,
-    fontWeight: '900',
-    color: '#111827',
-    marginVertical: 2,
+    fontWeight: '800',
+    color: '#E6EDF3',
+    marginVertical: 4,
   },
   metricSub: {
-    fontSize: 10,
-    color: '#9CA3AF',
-  },
-  cardBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  cardBoxTitle: {
-    fontSize: 10,
-    fontWeight: '800',
     color: '#6B7280',
-    letterSpacing: 0.5,
-    marginBottom: 10,
+    fontSize: 11,
   },
-  activityItem: {
+  infoRow: {
     flexDirection: 'row',
-    gap: 10,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    alignItems: 'center',
+    marginVertical: 6,
   },
-  activityAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#E5E7EB',
+  infoLabel: {
+    color: '#8C9BAB',
+    fontSize: 13,
+    fontWeight: '600',
+    width: 100,
+  },
+  infoValue: {
+    color: '#E6EDF3',
+    fontSize: 13,
+    flex: 1,
+  },
+  primaryActionBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#1D3B6A',
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginTop: 6,
   },
-  activityAvatarText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  activityText: {
-    fontSize: 12,
-    color: '#4B5563',
-    lineHeight: 16,
-  },
-  activityTime: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    marginTop: 2,
-  },
-  filterActionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  filterChips: {
-    gap: 6,
-  },
-  filterChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  filterChipActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
-  },
-  filterChipText: {
-    fontSize: 11,
+  primaryActionBtnText: {
+    color: '#579DFF',
+    fontSize: 14,
     fontWeight: '700',
-    color: '#4B5563',
   },
-  filterChipTextActive: {
-    color: '#FFFFFF',
+  filterScroll: {
+    gap: 8,
+    paddingBottom: 12,
   },
-  addTaskBtn: {
+  filterPill: {
+    backgroundColor: '#1C2127',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#282E33',
+  },
+  filterPillActive: {
+    backgroundColor: '#1D3B6A',
+    borderColor: '#579DFF',
+  },
+  filterPillText: {
+    color: '#8C9BAB',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  filterPillTextActive: {
+    color: '#579DFF',
+    fontWeight: '700',
+  },
+  emptyCardBox: {
+    backgroundColor: '#1C2127',
+    borderRadius: 16,
+    padding: 30,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#22272B',
+  },
+  emptyCardTitle: {
+    color: '#E6EDF3',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  emptyCardSub: {
+    color: '#8C9BAB',
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  emptyCreateBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#111827',
-    paddingHorizontal: 12,
+    backgroundColor: '#1D3B6A',
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
   },
-  addTaskBtnText: {
-    color: '#FFFFFF',
-    fontSize: 11,
+  emptyCreateBtnText: {
+    color: '#579DFF',
+    fontSize: 13,
     fontWeight: '700',
   },
-  emptyBox: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  kanbanHeaderRow: {
+  taskCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    backgroundColor: '#1C2127',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#22272B',
   },
-  kanbanNote: {
-    fontSize: 10,
-    color: '#6B7280',
-    flex: 1,
-    marginRight: 10,
+  taskCardTitle: {
+    color: '#E6EDF3',
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 19,
   },
-  kanbanColBox: {
-    backgroundColor: '#FFFFFF',
+  strikeThrough: {
+    textDecorationLine: 'line-through',
+    color: '#8C9BAB',
+  },
+  taskCardSub: {
+    color: '#8C9BAB',
+    fontSize: 11,
+    marginTop: 4,
+  },
+  kanbanScroll: {
+    gap: 12,
+    paddingBottom: 20,
+  },
+  kanbanColumn: {
+    width: 240,
+    backgroundColor: '#161A1D',
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderLeftWidth: 4,
-    marginBottom: 12,
+    borderColor: '#22272B',
   },
   kanbanColHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 10,
-    paddingBottom: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   kanbanColTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#111827',
+    color: '#E6EDF3',
+    fontSize: 13,
+    fontWeight: '700',
   },
-  kanbanCountBadge: {
+  colBadge: {
+    backgroundColor: '#282E33',
+    borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 10,
-    backgroundColor: '#F6F5EF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
-  kanbanCountText: {
+  colBadgeText: {
+    color: '#8C9BAB',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  colEmpty: {
+    paddingVertical: 30,
+    alignItems: 'center',
+  },
+  colEmptyText: {
+    color: '#8C9BAB',
+    fontSize: 12,
+  },
+  kanbanCard: {
+    backgroundColor: '#1C2127',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#282E33',
+  },
+  kanbanCardTitle: {
+    color: '#E6EDF3',
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
+  },
+  kanbanCardSub: {
+    color: '#8C9BAB',
+    fontSize: 11,
+    marginTop: 4,
+  },
+  memberHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  addMemberBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1D3B6A',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    gap: 4,
+  },
+  addMemberBtnText: {
+    color: '#579DFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  emptyMembersWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 30,
+  },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#22272B',
+  },
+  memberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1D3B6A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  memberAvatarImg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#282E33',
+  },
+  ownerAvatar: {
+    backgroundColor: '#382800',
+    borderWidth: 1,
+    borderColor: '#FFAB00',
+  },
+  ownerAvatarText: {
+    color: '#FFAB00',
+  },
+  memberAvatarText: {
+    color: '#579DFF',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  memberNameLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  memberName: {
+    color: '#E6EDF3',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  memberEmail: {
+    color: '#8C9BAB',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  memberStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  statDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#57D9A3',
+    marginRight: 6,
+  },
+  memberStatsText: {
+    color: '#626F86',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  ownerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2A1F00',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#7F5F01',
+  },
+  ownerBadgeText: {
+    color: '#FFAB00',
     fontSize: 10,
     fontWeight: '800',
-    color: '#4B5563',
   },
-  emptyColText: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    fontStyle: 'italic',
-    paddingVertical: 8,
+  pmBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#092147',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#1D3B6A',
+  },
+  pmBadgeText: {
+    color: '#579DFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  memberBadge: {
+    backgroundColor: '#22272B',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  memberBadgeText: {
+    color: '#8C9BAB',
+    fontSize: 10,
+    fontWeight: '700',
   },
 });

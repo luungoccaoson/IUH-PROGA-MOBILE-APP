@@ -1,7 +1,27 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+  StatusBar,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Plus, Folder, Calendar, Compass, ChevronRight, Settings } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  Plus,
+  Folder,
+  Calendar,
+  Compass,
+  ChevronRight,
+  Settings,
+  CheckCircle2,
+  Layers,
+} from 'lucide-react-native';
 import { workspaceService } from '../../services/workspace.service';
 import { Workspace, Space } from '../../types';
 import { SpaceModal } from '../../components/SpaceModal';
@@ -13,6 +33,7 @@ export default function WorkspaceDetailScreen() {
 
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [spaces, setSpaces] = useState<Space[]>([]);
+  const [taskStats, setTaskStats] = useState({ total: 0, done: 0, percent: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -29,6 +50,20 @@ export default function WorkspaceDetailScreen() {
 
       const spacesList = await workspaceService.getSpacesByWorkspace(workspaceId);
       setSpaces(spacesList);
+
+      // Fetch all tasks across spaces in this workspace to calculate true overall progress
+      try {
+        const spaceTasksList = await Promise.all(
+          spacesList.map((sp) => workspaceService.getTasksBySpace(sp.id).catch(() => []))
+        );
+        const allTasks = spaceTasksList.flat();
+        const total = allTasks.length;
+        const done = allTasks.filter((t) => t.status === 'DONE').length;
+        const percent = total > 0 ? Math.round((done / total) * 100) : 0;
+        setTaskStats({ total, done, percent });
+      } catch {
+        setTaskStats({ total: 0, done: 0, percent: 0 });
+      }
     } catch (err: any) {
       console.error('Error loading workspace details:', err);
       setError('Không thể tải thông tin Workspace.');
@@ -56,202 +91,326 @@ export default function WorkspaceDetailScreen() {
       endDate,
     });
     setSpaces((prev) => [...prev, newSpace]);
+    loadDetails();
   };
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#111827" />
-        <Text style={styles.loadingText}>Đang tải chi tiết Workspace...</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="light-content" backgroundColor="#101214" />
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#579DFF" />
+          <Text style={styles.loadingText}>Đang tải chi tiết Workspace...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error || !workspace) {
     return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>{error || 'Không tìm thấy Workspace.'}</Text>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={styles.backBtnText}>Quay lại</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="light-content" backgroundColor="#101214" />
+        <View style={styles.centerContainer}>
+          <Text style={styles.errorText}>{error || 'Không tìm thấy Workspace.'}</Text>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Text style={styles.backBtnText}>Quay lại</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        {/* Workspace Title & Info Card */}
-        <View style={styles.infoCard}>
-          <View style={styles.iconTag}>
-            <Folder size={20} color="#111827" />
-          </View>
-          <Text style={styles.wsName}>{workspace.name}</Text>
-          <Text style={styles.wsDesc}>
-            {workspace.description || 'Chưa có mô tả chi tiết.'}
-          </Text>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#101214" />
+      <View style={styles.container}>
+        {/* Custom Header Bar */}
+        <View style={styles.headerBar}>
+          <TouchableOpacity
+            style={styles.headerIconBtn}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <ArrowLeft size={22} color="#E6EDF3" />
+          </TouchableOpacity>
 
-          <View style={styles.metaRow}>
-            <Calendar size={12} color="#6B7280" />
-            <Text style={styles.metaText}>
-              Tạo ngày: {new Date(workspace.createdAt).toLocaleDateString('vi-VN')}
+          <View style={styles.headerTitleWrap}>
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {workspace.name}
             </Text>
-          </View>
-        </View>
-
-        {/* Metrics Grid */}
-        <View style={styles.metricsGrid}>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>TỔNG SPACES</Text>
-            <Text style={styles.metricValue}>{spaces.length}</Text>
-          </View>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>TIẾN ĐỘ CHUNG</Text>
-            <Text style={[styles.metricValue, { color: '#137333' }]}>68%</Text>
-          </View>
-        </View>
-
-        {/* Spaces Section Header */}
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleRow}>
-            <Compass size={16} color="#111827" />
-            <Text style={styles.sectionTitle}>Danh Sách Spaces ({spaces.length})</Text>
+            <Text style={styles.headerSub}>Chi Tiết Workspace</Text>
           </View>
 
-          <TouchableOpacity style={styles.addSpaceBtn} onPress={() => setSpaceModalVisible(true)}>
-            <Plus size={14} color="#FFFFFF" />
-            <Text style={styles.addSpaceText}>Thêm Space</Text>
+          <TouchableOpacity style={styles.headerIconBtn} activeOpacity={0.7}>
+            <Settings size={20} color="#8C9BAB" />
           </TouchableOpacity>
         </View>
 
-        {/* Spaces List */}
-        <View style={styles.spacesList}>
-          {spaces.length === 0 ? (
-            <View style={styles.emptySpaceBox}>
-              <Text style={styles.emptySpaceText}>
-                Chưa có Space nào trong Workspace này. Hãy nhấn nút "Thêm Space" để tạo mới.
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#579DFF"
+              colors={['#579DFF']}
+            />
+          }
+        >
+          {/* Workspace Info Card */}
+          <View style={styles.infoCard}>
+            <View style={styles.infoTopRow}>
+              <View style={styles.iconTag}>
+                <Folder size={22} color="#579DFF" />
+              </View>
+              <View style={styles.infoTitleWrap}>
+                <Text style={styles.wsName}>{workspace.name}</Text>
+                <Text style={styles.wsDesc}>
+                  {workspace.description || 'Chưa có mô tả chi tiết cho Workspace này.'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.metaRow}>
+              <Calendar size={14} color="#8C9BAB" />
+              <Text style={styles.metaText}>
+                Tạo ngày: {new Date(workspace.createdAt).toLocaleDateString('vi-VN')}
               </Text>
             </View>
-          ) : (
-            spaces.map((sp) => {
-              const initials = sp.name.substring(0, 2).toUpperCase();
-              return (
-                <TouchableOpacity
-                  key={sp.id}
-                  style={styles.spaceCard}
-                  onPress={() => router.push(`/spaces/${sp.id}`)}
-                >
-                  <View style={styles.spaceBadge}>
-                    <Text style={styles.spaceBadgeText}>{initials}</Text>
-                  </View>
-                  <View style={styles.spaceInfo}>
-                    <Text style={styles.spaceTitle}>{sp.name}</Text>
-                    {!!sp.startDate && (
-                      <Text style={styles.spaceDate}>
-                        {new Date(sp.startDate).toLocaleDateString('vi-VN')} -{' '}
-                        {sp.endDate ? new Date(sp.endDate).toLocaleDateString('vi-VN') : 'vô hạn'}
-                      </Text>
-                    )}
-                  </View>
-                  <ChevronRight size={18} color="#9CA3AF" />
-                </TouchableOpacity>
-              );
-            })
-          )}
-        </View>
-      </ScrollView>
+          </View>
 
-      {/* Create Space Modal */}
-      <SpaceModal
-        visible={spaceModalVisible}
-        onClose={() => setSpaceModalVisible(false)}
-        onSubmit={handleCreateSpace}
-      />
-    </View>
+          {/* Metrics Grid */}
+          <View style={styles.metricsGrid}>
+            <View style={styles.metricCard}>
+              <View style={styles.metricHeader}>
+                <Text style={styles.metricLabel}>TỔNG SPACES</Text>
+                <Layers size={16} color="#8C9BAB" />
+              </View>
+              <Text style={styles.metricValue}>{spaces.length}</Text>
+              <Text style={styles.metricSubText}>Không gian làm việc</Text>
+            </View>
+
+            <View style={styles.metricCard}>
+              <View style={styles.metricHeader}>
+                <Text style={styles.metricLabel}>TIẾN ĐỘ CHUNG</Text>
+                <CheckCircle2 size={16} color="#57D9A3" />
+              </View>
+              <Text style={[styles.metricValue, { color: '#57D9A3' }]}>
+                {taskStats.percent}%
+              </Text>
+              <Text style={styles.metricSubText}>
+                {taskStats.total > 0
+                  ? `${taskStats.done}/${taskStats.total} việc hoàn thành`
+                  : 'Chưa có công việc'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Progress Bar */}
+          {taskStats.total > 0 && (
+            <View style={styles.progressCard}>
+              <View style={styles.progressBarTrack}>
+                <View
+                  style={[
+                    styles.progressBarFill,
+                    { width: `${taskStats.percent}%` },
+                  ]}
+                />
+              </View>
+            </View>
+          )}
+
+          {/* Spaces Section Header */}
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <Compass size={18} color="#579DFF" />
+              <Text style={styles.sectionTitle}>Danh Sách Spaces ({spaces.length})</Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.addSpaceBtn}
+              onPress={() => setSpaceModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Plus size={15} color="#FFFFFF" />
+              <Text style={styles.addSpaceText}>Thêm Space</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Spaces List */}
+          <View style={styles.spacesList}>
+            {spaces.length === 0 ? (
+              <View style={styles.emptySpaceBox}>
+                <Compass size={32} color="#8C9BAB" style={{ marginBottom: 10 }} />
+                <Text style={styles.emptySpaceTitle}>Chưa có Space nào</Text>
+                <Text style={styles.emptySpaceText}>
+                  Hãy nhấn nút "Thêm Space" để tạo không gian quản lý dự án cho Workspace này.
+                </Text>
+              </View>
+            ) : (
+              spaces.map((sp) => {
+                const initials = sp.name.substring(0, 2).toUpperCase();
+                return (
+                  <TouchableOpacity
+                    key={sp.id}
+                    style={styles.spaceCard}
+                    activeOpacity={0.75}
+                    onPress={() => router.push(`/spaces/${sp.id}`)}
+                  >
+                    <View style={styles.spaceBadge}>
+                      <Text style={styles.spaceBadgeText}>{initials}</Text>
+                    </View>
+                    <View style={styles.spaceInfo}>
+                      <Text style={styles.spaceTitle} numberOfLines={1}>
+                        {sp.name}
+                      </Text>
+                      <Text style={styles.spaceDate}>
+                        {sp.startDate
+                          ? new Date(sp.startDate).toLocaleDateString('vi-VN')
+                          : 'Chưa đặt'}{' '}
+                        →{' '}
+                        {sp.endDate
+                          ? new Date(sp.endDate).toLocaleDateString('vi-VN')
+                          : 'Không thời hạn'}
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color="#8C9BAB" />
+                  </TouchableOpacity>
+                );
+              })
+            )}
+          </View>
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+
+        {/* Create Space Modal */}
+        <SpaceModal
+          visible={spaceModalVisible}
+          onClose={() => setSpaceModalVisible(false)}
+          onSubmit={handleCreateSpace}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#101214',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F6F5EF',
+    backgroundColor: '#101214',
+  },
+  headerBar: {
+    height: 56,
+    backgroundColor: '#101214',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#22272B',
+  },
+  headerIconBtn: {
+    padding: 6,
+  },
+  headerTitleWrap: {
+    flex: 1,
+    paddingHorizontal: 12,
+  },
+  headerTitle: {
+    color: '#E6EDF3',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  headerSub: {
+    color: '#8C9BAB',
+    fontSize: 11,
+    marginTop: 1,
   },
   scrollContent: {
     padding: 16,
-    gap: 14,
+    gap: 16,
   },
   centerContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#F6F5EF',
+    backgroundColor: '#101214',
   },
   loadingText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 10,
-    fontWeight: '600',
+    fontSize: 13,
+    color: '#8C9BAB',
+    marginTop: 12,
   },
   errorText: {
     fontSize: 14,
-    color: '#D93025',
+    color: '#EF4444',
     fontWeight: '700',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   backBtn: {
-    backgroundColor: '#111827',
+    backgroundColor: '#1D3B6A',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   backBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12,
+    color: '#579DFF',
+    fontSize: 13,
     fontWeight: '700',
   },
   infoCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
+    backgroundColor: '#1C2127',
+    borderRadius: 18,
+    padding: 18,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#282E33',
+  },
+  infoTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
   },
   iconTag: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: 12,
-    backgroundColor: '#F6F5EF',
+    backgroundColor: '#1D3B6A',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+  },
+  infoTitleWrap: {
+    flex: 1,
   },
   wsName: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#111827',
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#E6EDF3',
     marginBottom: 4,
   },
   wsDesc: {
     fontSize: 13,
-    color: '#4B5563',
+    color: '#8C9BAB',
     lineHeight: 18,
-    marginBottom: 12,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingTop: 10,
+    marginTop: 14,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F6F5EF',
+    borderTopColor: '#22272B',
   },
   metaText: {
-    fontSize: 11,
-    color: '#6B7280',
+    fontSize: 12,
+    color: '#8C9BAB',
     fontWeight: '500',
   },
   metricsGrid: {
@@ -260,107 +419,140 @@ const styles = StyleSheet.create({
   },
   metricCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1C2127',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#282E33',
+  },
+  metricHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
   metricLabel: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '800',
-    color: '#6B7280',
+    color: '#8C9BAB',
     letterSpacing: 0.5,
-    marginBottom: 4,
   },
   metricValue: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '900',
-    color: '#111827',
+    color: '#E6EDF3',
+    marginVertical: 4,
+  },
+  metricSubText: {
+    fontSize: 11,
+    color: '#626F86',
+    fontWeight: '500',
+  },
+  progressCard: {
+    backgroundColor: '#1C2127',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#282E33',
+  },
+  progressBarTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#161A1D',
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#57D9A3',
+    borderRadius: 3,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 6,
+    marginTop: 4,
   },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
-    color: '#111827',
+    color: '#E6EDF3',
   },
   addSpaceBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#111827',
+    backgroundColor: '#0C66E4',
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 10,
+    borderRadius: 8,
+    gap: 6,
   },
   addSpaceText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
   },
   spacesList: {
     gap: 10,
   },
-  emptySpaceBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    alignItems: 'center',
-  },
-  emptySpaceText: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 18,
-  },
   spaceCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: '#1C2127',
+    borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#282E33',
   },
   spaceBadge: {
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: '#E6F4EA',
-    borderWidth: 1,
-    borderColor: '#D1E7DD',
+    backgroundColor: '#1D3B6A',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   spaceBadgeText: {
-    fontSize: 12,
+    color: '#579DFF',
+    fontSize: 13,
     fontWeight: '800',
-    color: '#137333',
   },
   spaceInfo: {
     flex: 1,
   },
   spaceTitle: {
+    color: '#E6EDF3',
     fontSize: 14,
     fontWeight: '700',
-    color: '#111827',
   },
   spaceDate: {
+    color: '#8C9BAB',
     fontSize: 11,
-    color: '#6B7280',
-    marginTop: 2,
+    marginTop: 3,
+  },
+  emptySpaceBox: {
+    backgroundColor: '#1C2127',
+    borderRadius: 16,
+    padding: 30,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#282E33',
+  },
+  emptySpaceTitle: {
+    color: '#E6EDF3',
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  emptySpaceText: {
+    color: '#8C9BAB',
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });

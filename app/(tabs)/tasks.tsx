@@ -49,7 +49,6 @@ export default function TasksScreen() {
     'Tất cả công việc',
     'Việc cần làm (TODO)',
     'Đang làm (IN_PROGRESS)',
-    'Đang kiểm thử (REVIEW)',
     'Đã xong (DONE)',
   ];
 
@@ -289,7 +288,7 @@ export default function TasksScreen() {
             style={styles.boardScroll}
             contentContainerStyle={styles.boardContent}
           >
-            {(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'] as const).map(
+            {(['TODO', 'IN_PROGRESS', 'DONE'] as const).map(
               (status) => {
                 const columnTasks = tasksWithSpace.filter(
                   (i) => i.task.status === status

@@ -15,37 +15,76 @@ import {
   Search,
   Plus,
   Star,
+  Rocket,
   Folder,
-  FolderPlus,
   Layers,
+  FolderPlus,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { workspaceService } from '../../services/workspace.service';
-import { Workspace, Space } from '../../types';
+import { Workspace, Space, ClassifiedWorkspaces } from '../../types';
 import { JiraHeader } from '../../components/jira/JiraHeader';
 import { JiraSlidersIcon } from '../../components/jira/JiraIcons';
 import { WorkspaceModal } from '../../components/WorkspaceModal';
+
+interface SpaceItemView {
+  id: number;
+  name: string;
+  code: string;
+  workspaceName?: string;
+  type: 'workspace' | 'space';
+  iconType: 'sliders' | 'rocket' | 'folder';
+  isOwner?: boolean;
+}
 
 export default function SpacesScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
 
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [spacesData, setSpacesData] = useState<{ workspace: Workspace; spaces: Space[] }[]>([]);
+  const [items, setItems] = useState<SpaceItemView[]>([]);
   const [favorites, setFavorites] = useState<{ [id: string]: boolean }>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [createWsModalVisible, setCreateWsModalVisible] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!user?.id) return;
     try {
-      const [wsList, allSpaces] = await Promise.all([
-        workspaceService.getWorkspacesByOwner(user.id),
-        workspaceService.getAllUserSpaces(user.id),
-      ]);
-      setWorkspaces(wsList);
-      setSpacesData(allSpaces);
+      let classified: ClassifiedWorkspaces = {
+        ownedWorkspaces: [],
+        joinedWorkspaces: [],
+        pendingWorkspaces: [],
+      };
+      try {
+        classified = await workspaceService.getClassifiedWorkspaces(user.id);
+      } catch {
+        const fallback = await workspaceService.getWorkspacesByOwner(user.id);
+        classified = {
+          ownedWorkspaces: fallback,
+          joinedWorkspaces: [],
+          pendingWorkspaces: [],
+        };
+      }
+
+      const allSpacesList = await workspaceService.getAllUserSpaces(user.id);
+
+      const displayList: SpaceItemView[] = [];
+
+      // Only display Spaces
+      allSpacesList.forEach((group, gIdx) => {
+        group.spaces.forEach((sp, sIdx) => {
+          displayList.push({
+            id: sp.id,
+            name: sp.name,
+            code: group.workspace.name.toUpperCase(),
+            workspaceName: group.workspace.name,
+            type: 'space',
+            iconType: (sIdx + gIdx) % 2 === 0 ? 'sliders' : 'rocket',
+          });
+        });
+      });
+
+      setItems(displayList);
     } catch (err) {
       console.log('Error loading spaces:', err);
     } finally {
@@ -63,10 +102,10 @@ export default function SpacesScreen() {
     loadData();
   };
 
-  const toggleFavorite = (id: string) => {
+  const toggleFavorite = (key: string) => {
     setFavorites((prev) => ({
       ...prev,
-      [id]: !prev[id],
+      [key]: !prev[key],
     }));
   };
 
@@ -80,13 +119,38 @@ export default function SpacesScreen() {
     loadData();
   };
 
-  // Flatten spaces
-  const allSpaces = spacesData.flatMap((item) =>
-    item.spaces.map((sp) => ({
-      ...sp,
-      workspaceName: item.workspace.name,
-    }))
-  );
+  const handleItemPress = (item: SpaceItemView) => {
+    if (item.type === 'space') {
+      router.push(`/spaces/${item.id}`);
+    } else {
+      router.push(`/workspaces/${item.id}`);
+    }
+  };
+
+  // Recent items: take up to 2 items
+  const recentItems = items.slice(0, 2);
+
+  const renderIcon = (type: 'sliders' | 'rocket' | 'folder') => {
+    if (type === 'sliders') {
+      return (
+        <View style={[styles.itemIconWrap, { backgroundColor: '#E65100' }]}>
+          <JiraSlidersIcon size={20} color="#FFFFFF" />
+        </View>
+      );
+    }
+    if (type === 'rocket') {
+      return (
+        <View style={[styles.itemIconWrap, { backgroundColor: '#1D3B6A' }]}>
+          <Rocket size={20} color="#579DFF" />
+        </View>
+      );
+    }
+    return (
+      <View style={[styles.itemIconWrap, { backgroundColor: '#2C3E50' }]}>
+        <Folder size={20} color="#579DFF" />
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -97,10 +161,13 @@ export default function SpacesScreen() {
           title="Không gian"
           rightActions={
             <>
+              <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
+                <Search size={22} color="#E6EDF3" />
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconBtn}
                 activeOpacity={0.7}
-                onPress={() => setModalVisible(true)}
+                onPress={() => setCreateWsModalVisible(true)}
               >
                 <Plus size={24} color="#E6EDF3" />
               </TouchableOpacity>
@@ -125,18 +192,18 @@ export default function SpacesScreen() {
               <ActivityIndicator size="small" color="#579DFF" />
               <Text style={styles.loadingText}>Đang tải không gian...</Text>
             </View>
-          ) : workspaces.length === 0 ? (
+          ) : items.length === 0 ? (
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconCircle}>
                 <Layers size={36} color="#579DFF" />
               </View>
               <Text style={styles.emptyTitle}>Chưa có Không gian nào</Text>
               <Text style={styles.emptySubtitle}>
-                Tạo Workspace và Space đầu tiên để bắt đầu phân công nhiệm vụ và quản lý dự án cùng đội ngũ.
+                Bắt đầu bằng cách tạo Không gian làm việc đầu tiên để quản lý dự án cùng đội ngũ.
               </Text>
               <TouchableOpacity
                 style={styles.emptyActionBtn}
-                onPress={() => setModalVisible(true)}
+                onPress={() => setCreateWsModalVisible(true)}
                 activeOpacity={0.8}
               >
                 <FolderPlus size={16} color="#FFFFFF" />
@@ -145,116 +212,89 @@ export default function SpacesScreen() {
             </View>
           ) : (
             <>
-              {/* Section: Đã xem gần đây (hiển thị workspace/space đầu tiên) */}
-              {allSpaces.length > 0 ? (
+              {/* Section: Đã xem gần đây */}
+              {recentItems.length > 0 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Đã xem gần đây</Text>
-                  <TouchableOpacity
-                    style={styles.spaceCard}
-                    activeOpacity={0.75}
-                    onPress={() => router.push(`/spaces/${allSpaces[0].id}`)}
-                  >
-                    <View style={[styles.spaceIconWrap, { backgroundColor: '#E65100' }]}>
-                      <JiraSlidersIcon size={20} color="#FFFFFF" />
-                    </View>
-                    <View style={styles.spaceInfo}>
-                      <Text style={styles.spaceName}>{allSpaces[0].name}</Text>
-                      <Text style={styles.spaceKey}>
-                        {allSpaces[0].workspaceName}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => toggleFavorite(`sp-${allSpaces[0].id}`)}
-                      style={styles.starBtn}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Star
-                        size={20}
-                        color={favorites[`sp-${allSpaces[0].id}`] ? '#F59E0B' : '#8C9BAB'}
-                        fill={favorites[`sp-${allSpaces[0].id}`] ? '#F59E0B' : 'transparent'}
-                      />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Đã xem gần đây</Text>
-                  <TouchableOpacity
-                    style={styles.spaceCard}
-                    activeOpacity={0.75}
-                    onPress={() => router.push(`/workspaces/${workspaces[0].id}`)}
-                  >
-                    <View style={[styles.spaceIconWrap, { backgroundColor: '#E65100' }]}>
-                      <JiraSlidersIcon size={20} color="#FFFFFF" />
-                    </View>
-                    <View style={styles.spaceInfo}>
-                      <Text style={styles.spaceName}>{workspaces[0].name}</Text>
-                      <Text style={styles.spaceKey}>
-                        {workspaces[0].name.toUpperCase()}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => toggleFavorite(`ws-${workspaces[0].id}`)}
-                      style={styles.starBtn}
-                    >
-                      <Star
-                        size={20}
-                        color={favorites[`ws-${workspaces[0].id}`] ? '#F59E0B' : '#8C9BAB'}
-                        fill={favorites[`ws-${workspaces[0].id}`] ? '#F59E0B' : 'transparent'}
-                      />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
+                  <View style={styles.cardGroup}>
+                    {recentItems.map((item, idx) => {
+                      const favKey = `recent-${item.type}-${item.id}`;
+                      const isFav = !!favorites[favKey];
+                      return (
+                        <React.Fragment key={favKey}>
+                          {idx > 0 && <View style={styles.groupDivider} />}
+                          <TouchableOpacity
+                            style={styles.groupItem}
+                            activeOpacity={0.75}
+                            onPress={() => handleItemPress(item)}
+                          >
+                            {renderIcon(item.iconType)}
+                            <View style={styles.itemInfo}>
+                              <Text style={styles.itemName} numberOfLines={1}>
+                                {item.name}
+                              </Text>
+                              <Text style={styles.itemCode}>
+                                {item.code}
+                              </Text>
+                            </View>
+                            <TouchableOpacity
+                              onPress={() => toggleFavorite(favKey)}
+                              style={styles.starBtn}
+                              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                              <Star
+                                size={20}
+                                color={isFav ? '#F59E0B' : '#8C9BAB'}
+                                fill={isFav ? '#F59E0B' : 'transparent'}
+                              />
+                            </TouchableOpacity>
+                          </TouchableOpacity>
+                        </React.Fragment>
+                      );
+                    })}
+                  </View>
                 </View>
               )}
 
-              {/* Section: Tất cả các không gian (Workspaces & Spaces) */}
+              {/* Section: Tất cả các không gian */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Tất cả các không gian</Text>
-
-                <View style={styles.spaceCardGroup}>
-                  {workspaces.map((ws, idx) => (
-                    <React.Fragment key={ws.id}>
-                      {idx > 0 && <View style={styles.groupDivider} />}
-                      <TouchableOpacity
-                        style={styles.spaceGroupItem}
-                        activeOpacity={0.75}
-                        onPress={() => router.push(`/workspaces/${ws.id}`)}
-                      >
-                        <View
-                          style={[
-                            styles.spaceIconWrap,
-                            {
-                              backgroundColor:
-                                idx % 2 === 0 ? '#E65100' : '#1D3B6A',
-                            },
-                          ]}
-                        >
-                          {idx % 2 === 0 ? (
-                            <JiraSlidersIcon size={20} color="#FFFFFF" />
-                          ) : (
-                            <Folder size={20} color="#579DFF" />
-                          )}
-                        </View>
-                        <View style={styles.spaceInfo}>
-                          <Text style={styles.spaceName}>{ws.name}</Text>
-                          <Text style={styles.spaceKey}>
-                            {ws.description || ws.name.toUpperCase()}
-                          </Text>
-                        </View>
+                <View style={styles.cardGroup}>
+                  {items.map((item, idx) => {
+                    const favKey = `all-${item.type}-${item.id}`;
+                    const isFav = !!favorites[favKey];
+                    return (
+                      <React.Fragment key={favKey}>
+                        {idx > 0 && <View style={styles.groupDivider} />}
                         <TouchableOpacity
-                          onPress={() => toggleFavorite(`ws-${ws.id}`)}
-                          style={styles.starBtn}
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          style={styles.groupItem}
+                          activeOpacity={0.75}
+                          onPress={() => handleItemPress(item)}
                         >
-                          <Star
-                            size={20}
-                            color={favorites[`ws-${ws.id}`] ? '#F59E0B' : '#8C9BAB'}
-                            fill={favorites[`ws-${ws.id}`] ? '#F59E0B' : 'transparent'}
-                          />
+                          {renderIcon(item.iconType)}
+                          <View style={styles.itemInfo}>
+                            <Text style={styles.itemName} numberOfLines={1}>
+                              {item.name}
+                            </Text>
+                            <Text style={styles.itemCode}>
+                              {item.code}
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => toggleFavorite(favKey)}
+                            style={styles.starBtn}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <Star
+                              size={20}
+                              color={isFav ? '#F59E0B' : '#8C9BAB'}
+                              fill={isFav ? '#F59E0B' : 'transparent'}
+                            />
+                          </TouchableOpacity>
                         </TouchableOpacity>
-                      </TouchableOpacity>
-                    </React.Fragment>
-                  ))}
+                      </React.Fragment>
+                    );
+                  })}
                 </View>
               </View>
             </>
@@ -264,8 +304,8 @@ export default function SpacesScreen() {
         </ScrollView>
 
         <WorkspaceModal
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
+          visible={createWsModalVisible}
+          onClose={() => setCreateWsModalVisible(false)}
           onSubmit={handleCreateWorkspace}
         />
       </View>
@@ -299,23 +339,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 10,
   },
-  spaceCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1C2127',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#22272B',
-  },
-  spaceCardGroup: {
+  cardGroup: {
     backgroundColor: '#1C2127',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#22272B',
     overflow: 'hidden',
   },
-  spaceGroupItem: {
+  groupItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
@@ -325,25 +356,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#22272B',
     marginLeft: 66,
   },
-  spaceIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+  itemIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
   },
-  spaceInfo: {
+  itemInfo: {
     flex: 1,
   },
-  spaceName: {
+  itemName: {
     color: '#E6EDF3',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
-  spaceKey: {
+  itemCode: {
     color: '#8C9BAB',
-    fontSize: 13,
+    fontSize: 12,
     marginTop: 2,
     letterSpacing: 0.5,
   },

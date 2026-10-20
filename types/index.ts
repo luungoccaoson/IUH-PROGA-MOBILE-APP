@@ -11,6 +11,23 @@ export interface User {
   email: string;
   isAdmin: boolean;
   createdAt: string;
+  fullName?: string;
+  displayName?: string;
+  avatarUrl?: string;
+  phoneNumber?: string;
+  jobTitle?: string;
+  bio?: string;
+}
+
+export interface SpaceMember {
+  id?: {
+    spaceId: number;
+    userId: number;
+  };
+  spaceId?: number;
+  userId?: number;
+  roleId: number;
+  joinedAt?: string;
 }
 
 export interface AuthResponse {
