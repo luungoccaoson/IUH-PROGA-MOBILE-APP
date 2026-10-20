@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   RefreshControl,
   StatusBar,
+  Alert,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -21,10 +23,15 @@ import {
   Settings,
   CheckCircle2,
   Layers,
+  UserPlus,
+  Edit3,
+  Trash2,
 } from 'lucide-react-native';
 import { workspaceService } from '../../services/workspace.service';
 import { Workspace, Space } from '../../types';
 import { SpaceModal } from '../../components/SpaceModal';
+import { WorkspaceModal } from '../../components/WorkspaceModal';
+import { AddWorkspaceMemberModal } from '../../components/AddWorkspaceMemberModal';
 
 export default function WorkspaceDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -34,12 +41,16 @@ export default function WorkspaceDetailScreen() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [taskStats, setTaskStats] = useState({ total: 0, done: 0, percent: 0 });
+  const [existingMemberIds, setExistingMemberIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
-  // Space Modal State
+  // Modals State
   const [spaceModalVisible, setSpaceModalVisible] = useState(false);
+  const [settingsMenuVisible, setSettingsMenuVisible] = useState(false);
+  const [editWsModalVisible, setEditWsModalVisible] = useState(false);
+  const [addMemberModalVisible, setAddMemberModalVisible] = useState(false);
 
   const loadDetails = useCallback(async () => {
     if (!workspaceId) return;
@@ -48,8 +59,20 @@ export default function WorkspaceDetailScreen() {
       const wsData = await workspaceService.getWorkspaceById(workspaceId);
       setWorkspace(wsData);
 
-      const spacesList = await workspaceService.getSpacesByWorkspace(workspaceId);
+      const [spacesList, membersList] = await Promise.all([
+        workspaceService.getSpacesByWorkspace(workspaceId).catch(() => []),
+        workspaceService.getWorkspaceMembers(workspaceId).catch(() => []),
+      ]);
       setSpaces(spacesList);
+
+      const memberIds: number[] = (membersList || [])
+        .map((m: any) => m.id?.userId || m.userId)
+        .filter((uid): uid is number => typeof uid === 'number');
+
+      if (wsData?.ownerId && !memberIds.includes(wsData.ownerId)) {
+        memberIds.push(wsData.ownerId);
+      }
+      setExistingMemberIds(memberIds);
 
       // Fetch all tasks across spaces in this workspace to calculate true overall progress
       try {
@@ -92,6 +115,45 @@ export default function WorkspaceDetailScreen() {
     });
     setSpaces((prev) => [...prev, newSpace]);
     loadDetails();
+  };
+
+  const handleUpdateWorkspace = async (name: string, description: string) => {
+    if (!workspace) return;
+    try {
+      const updated = await workspaceService.updateWorkspace(workspace.id, {
+        name,
+        description,
+        ownerId: workspace.ownerId,
+      });
+      setWorkspace(updated);
+      Alert.alert('Thành công', 'Thông tin Workspace đã được cập nhật.');
+    } catch (e: any) {
+      Alert.alert('Lỗi', e.response?.data?.message || 'Không thể cập nhật thông tin Workspace.');
+    }
+  };
+
+  const handleDeleteWorkspace = () => {
+    if (!workspace) return;
+    Alert.alert(
+      'Xác nhận xóa Workspace',
+      `Bạn có chắc chắn muốn xóa "${workspace.name}"? Toàn bộ các không gian và công việc bên trong sẽ bị xóa vĩnh viễn.`,
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa vĩnh viễn',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await workspaceService.deleteWorkspace(workspace.id);
+              Alert.alert('Thành công', 'Đã xóa Workspace thành công.');
+              router.back();
+            } catch (e: any) {
+              Alert.alert('Lỗi', e.response?.data?.message || 'Không thể xóa Workspace này.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -141,7 +203,11 @@ export default function WorkspaceDetailScreen() {
             <Text style={styles.headerSub}>Chi Tiết Workspace</Text>
           </View>
 
-          <TouchableOpacity style={styles.headerIconBtn} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.headerIconBtn}
+            activeOpacity={0.7}
+            onPress={() => setSettingsMenuVisible(true)}
+          >
             <Settings size={20} color="#8C9BAB" />
           </TouchableOpacity>
         </View>
@@ -291,6 +357,117 @@ export default function WorkspaceDetailScreen() {
           onClose={() => setSpaceModalVisible(false)}
           onSubmit={handleCreateSpace}
         />
+
+        {/* Edit Workspace Modal */}
+        <WorkspaceModal
+          visible={editWsModalVisible}
+          onClose={() => setEditWsModalVisible(false)}
+          onSubmit={handleUpdateWorkspace}
+          workspaceToEdit={workspace}
+        />
+
+        {/* Add Member to Workspace Modal */}
+        <AddWorkspaceMemberModal
+          visible={addMemberModalVisible}
+          workspaceId={workspaceId}
+          existingMemberIds={existingMemberIds}
+          onClose={() => setAddMemberModalVisible(false)}
+          onMemberInvited={loadDetails}
+        />
+
+        {/* Settings Action Sheet Modal */}
+        <Modal
+          visible={settingsMenuVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setSettingsMenuVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setSettingsMenuVisible(false)}
+          >
+            <View style={styles.actionSheetContainer}>
+              <View style={styles.actionSheetHeader}>
+                <View style={styles.actionSheetIndicator} />
+                <Text style={styles.actionSheetTitle}>Cài đặt Workspace</Text>
+                <Text style={styles.actionSheetSub}>{workspace.name}</Text>
+              </View>
+
+              {/* Action 1: Thêm thành viên */}
+              <TouchableOpacity
+                style={styles.actionItem}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setSettingsMenuVisible(false);
+                  setAddMemberModalVisible(true);
+                }}
+              >
+                <View style={[styles.actionIconWrap, { backgroundColor: '#1D3B6A' }]}>
+                  <UserPlus size={18} color="#579DFF" />
+                </View>
+                <View style={styles.actionTextWrap}>
+                  <Text style={styles.actionTitle}>Thêm thành viên</Text>
+                  <Text style={styles.actionDesc}>
+                    Mời người dùng khác tham gia vào Workspace này
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* Action 2: Chỉnh sửa thông tin workspace */}
+              <TouchableOpacity
+                style={styles.actionItem}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setSettingsMenuVisible(false);
+                  setEditWsModalVisible(true);
+                }}
+              >
+                <View style={[styles.actionIconWrap, { backgroundColor: '#282E33' }]}>
+                  <Edit3 size={18} color="#E6EDF3" />
+                </View>
+                <View style={styles.actionTextWrap}>
+                  <Text style={styles.actionTitle}>Chỉnh sửa Workspace</Text>
+                  <Text style={styles.actionDesc}>
+                    Thay đổi tên và mô tả của Workspace
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.actionDivider} />
+
+              {/* Action 3: Xóa workspace */}
+              <TouchableOpacity
+                style={styles.actionItem}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setSettingsMenuVisible(false);
+                  handleDeleteWorkspace();
+                }}
+              >
+                <View style={[styles.actionIconWrap, { backgroundColor: '#3A1414' }]}>
+                  <Trash2 size={18} color="#EF4444" />
+                </View>
+                <View style={styles.actionTextWrap}>
+                  <Text style={[styles.actionTitle, { color: '#EF4444' }]}>
+                    Xóa Workspace
+                  </Text>
+                  <Text style={styles.actionDesc}>
+                    Xóa vĩnh viễn Workspace này và toàn bộ các Spaces bên trong
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelActionBtn}
+                onPress={() => setSettingsMenuVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.cancelActionBtnText}>Đóng</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -554,5 +731,85 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'flex-end',
+  },
+  actionSheetContainer: {
+    backgroundColor: '#1C2127',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#282E33',
+  },
+  actionSheetHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  actionSheetIndicator: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#38414A',
+    marginBottom: 12,
+  },
+  actionSheetTitle: {
+    color: '#E6EDF3',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  actionSheetSub: {
+    color: '#8C9BAB',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  actionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 14,
+  },
+  actionIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionTextWrap: {
+    flex: 1,
+  },
+  actionTitle: {
+    color: '#E6EDF3',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  actionDesc: {
+    color: '#8C9BAB',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  actionDivider: {
+    height: 1,
+    backgroundColor: '#22272B',
+    marginVertical: 6,
+  },
+  cancelActionBtn: {
+    marginTop: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#161A1D',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#282E33',
+  },
+  cancelActionBtnText: {
+    color: '#8C9BAB',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

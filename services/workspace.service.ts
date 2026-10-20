@@ -22,6 +22,10 @@ export const workspaceService = {
     return response.data.data;
   },
 
+  inviteMember: async (workspaceId: number, userId: number, roleId: number = 3): Promise<void> => {
+    await apiClient.post(`/workspaces/${workspaceId}/invite?userId=${userId}&roleId=${roleId}`);
+  },
+
   acceptInvitation: async (workspaceId: number, userId: number): Promise<void> => {
     await apiClient.put(`/workspaces/${workspaceId}/invitations/accept?userId=${userId}`);
   },

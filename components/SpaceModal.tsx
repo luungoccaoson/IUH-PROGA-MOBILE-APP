@@ -91,7 +91,7 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
             <Text style={styles.label}>TÊN SPACE</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ví dụ: Sprint 1 - Frontend Mobile"
+              placeholder="Ví dụ: Phòng HR"
               placeholderTextColor="#9CA3AF"
               value={name}
               onChangeText={setName}
