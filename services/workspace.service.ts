@@ -1,10 +1,37 @@
 import { apiClient } from './api';
-import { Workspace, Space, Task, TaskStatus, ApiResponse, ChatMessage } from '../types';
+import {
+  Workspace,
+  Space,
+  Task,
+  TaskStatus,
+  ApiResponse,
+  ChatMessage,
+  ClassifiedWorkspaces,
+  WorkspaceMember,
+} from '../types';
 
 export const workspaceService = {
   // Workspaces
   getWorkspacesByOwner: async (ownerId: number): Promise<Workspace[]> => {
     const response = await apiClient.get<ApiResponse<Workspace[]>>(`/workspaces/owner/${ownerId}`);
+    return response.data.data;
+  },
+
+  getClassifiedWorkspaces: async (userId: number): Promise<ClassifiedWorkspaces> => {
+    const response = await apiClient.get<ApiResponse<ClassifiedWorkspaces>>(`/workspaces/user/${userId}/classified`);
+    return response.data.data;
+  },
+
+  acceptInvitation: async (workspaceId: number, userId: number): Promise<void> => {
+    await apiClient.put(`/workspaces/${workspaceId}/invitations/accept?userId=${userId}`);
+  },
+
+  declineInvitation: async (workspaceId: number, userId: number): Promise<void> => {
+    await apiClient.put(`/workspaces/${workspaceId}/invitations/decline?userId=${userId}`);
+  },
+
+  getWorkspaceMembers: async (workspaceId: number): Promise<WorkspaceMember[]> => {
+    const response = await apiClient.get<ApiResponse<WorkspaceMember[]>>(`/workspaces/${workspaceId}/members`);
     return response.data.data;
   },
 
@@ -76,10 +103,16 @@ export const workspaceService = {
     await apiClient.delete<ApiResponse<void>>(`/tasks/${taskId}`);
   },
 
-  // Get all spaces across user's workspaces
-  getAllUserSpaces: async (ownerId: number): Promise<{ workspace: Workspace; spaces: Space[] }[]> => {
+  // Get all spaces across user's workspaces (both owned and joined)
+  getAllUserSpaces: async (userId: number): Promise<{ workspace: Workspace; spaces: Space[] }[]> => {
     try {
-      const workspaces = await workspaceService.getWorkspacesByOwner(ownerId);
+      let workspaces: Workspace[] = [];
+      try {
+        const classified = await workspaceService.getClassifiedWorkspaces(userId);
+        workspaces = [...classified.ownedWorkspaces, ...classified.joinedWorkspaces];
+      } catch {
+        workspaces = await workspaceService.getWorkspacesByOwner(userId);
+      }
       const results: { workspace: Workspace; spaces: Space[] }[] = [];
       for (const ws of workspaces) {
         try {
@@ -96,9 +129,15 @@ export const workspaceService = {
   },
 
   // Get all tasks across user's spaces
-  getAllUserTasks: async (ownerId: number): Promise<{ task: Task; spaceName: string; workspaceName: string }[]> => {
+  getAllUserTasks: async (userId: number): Promise<{ task: Task; spaceName: string; workspaceName: string }[]> => {
     try {
-      const workspaces = await workspaceService.getWorkspacesByOwner(ownerId);
+      let workspaces: Workspace[] = [];
+      try {
+        const classified = await workspaceService.getClassifiedWorkspaces(userId);
+        workspaces = [...classified.ownedWorkspaces, ...classified.joinedWorkspaces];
+      } catch {
+        workspaces = await workspaceService.getWorkspacesByOwner(userId);
+      }
       const allTasks: { task: Task; spaceName: string; workspaceName: string }[] = [];
 
       for (const ws of workspaces) {

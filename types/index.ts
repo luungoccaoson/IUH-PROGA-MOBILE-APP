@@ -28,6 +28,20 @@ export interface Workspace {
   createdAt: string;
 }
 
+export interface WorkspaceMember {
+  workspaceId: number;
+  userId: number;
+  roleId: number;
+  status: "ACCEPTED" | "PENDING" | "REJECTED";
+  joinedAt: string;
+}
+
+export interface ClassifiedWorkspaces {
+  ownedWorkspaces: Workspace[];
+  joinedWorkspaces: Workspace[];
+  pendingWorkspaces: Workspace[];
+}
+
 export interface Space {
   id: number;
   workspaceId: number;
