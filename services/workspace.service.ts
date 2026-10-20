@@ -76,6 +76,58 @@ export const workspaceService = {
     await apiClient.delete<ApiResponse<void>>(`/tasks/${taskId}`);
   },
 
+  // Get all spaces across user's workspaces
+  getAllUserSpaces: async (ownerId: number): Promise<{ workspace: Workspace; spaces: Space[] }[]> => {
+    try {
+      const workspaces = await workspaceService.getWorkspacesByOwner(ownerId);
+      const results: { workspace: Workspace; spaces: Space[] }[] = [];
+      for (const ws of workspaces) {
+        try {
+          const spaces = await workspaceService.getSpacesByWorkspace(ws.id);
+          results.push({ workspace: ws, spaces });
+        } catch {
+          results.push({ workspace: ws, spaces: [] });
+        }
+      }
+      return results;
+    } catch {
+      return [];
+    }
+  },
+
+  // Get all tasks across user's spaces
+  getAllUserTasks: async (ownerId: number): Promise<{ task: Task; spaceName: string; workspaceName: string }[]> => {
+    try {
+      const workspaces = await workspaceService.getWorkspacesByOwner(ownerId);
+      const allTasks: { task: Task; spaceName: string; workspaceName: string }[] = [];
+
+      for (const ws of workspaces) {
+        try {
+          const spaces = await workspaceService.getSpacesByWorkspace(ws.id);
+          for (const sp of spaces) {
+            try {
+              const tasks = await workspaceService.getTasksBySpace(sp.id);
+              for (const t of tasks) {
+                allTasks.push({
+                  task: t,
+                  spaceName: sp.name,
+                  workspaceName: ws.name,
+                });
+              }
+            } catch {
+              // ignore
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+      return allTasks;
+    } catch {
+      return [];
+    }
+  },
+
   // AI Chat & Agent assistant
   sendAgentMessage: async (data: {
     agentType: 'REQUIREMENT' | 'PM' | 'TECHNICAL_ADVISOR';

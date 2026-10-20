@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,74 +6,56 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  SafeAreaView,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
-import { RotateCw, SquareCheck } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { RotateCw, SquareCheck, Activity } from 'lucide-react-native';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { workspaceService } from '../../services/workspace.service';
+import { Task } from '../../types';
 import { JiraHeader } from '../../components/jira/JiraHeader';
 
-interface ActivityItem {
-  id: string;
-  avatarText: string;
-  avatarColor: string;
-  message: string;
-  issueKey?: string;
-  date: string;
-}
-
-const ACTIVITIES_GROUP_1: ActivityItem[] = [
-  {
-    id: '1',
-    avatarText: 'S',
-    avatarColor: '#F59E0B',
-    message: "Sonarro đã thay đổi Assignee thành ' Sonarro ' trên PROGA-66 - abc",
-    issueKey: 'PROGA-66',
-    date: '19 thg 10 2026',
-  },
-  {
-    id: '2',
-    avatarText: 'S',
-    avatarColor: '#F59E0B',
-    message: 'Sonarro đã thay đổi trạng thái thành In Progress vào ngày PROGA-66 - abc',
-    issueKey: 'PROGA-66',
-    date: '19 thg 10 2026',
-  },
-  {
-    id: '3',
-    avatarText: 'S',
-    avatarColor: '#F59E0B',
-    message: "Sonarro đã thay đổi Summary trong số PROGA-66 thành ' Logic phân chia task tự động '",
-    issueKey: 'PROGA-66',
-    date: '19 thg 10 2026',
-  },
-];
-
-const ACTIVITIES_GROUP_2: ActivityItem[] = [
-  {
-    id: '4',
-    avatarText: 'S',
-    avatarColor: '#F59E0B',
-    message: 'Sonarro đã tạo ra PROGA-66 - abc',
-    issueKey: 'PROGA-66',
-    date: '05 thg 10 2026',
-  },
-  {
-    id: '5',
-    avatarText: 'S',
-    avatarColor: '#F59E0B',
-    message:
-      "Sonarro changed the status to Done on PROGA-61 - Cải thiện UI chat AI + giới hạn score, trang và size file with a resolution of 'Hoàn thành'",
-    date: '05 thg 10 2026',
-  },
-];
-
 export default function DashboardScreen() {
+  const router = useRouter();
+  const { user } = useAuthStore();
+
+  const [assignedTasks, setAssignedTasks] = useState<
+    { task: Task; spaceName: string; workspaceName: string }[]
+  >([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const allTasks = await workspaceService.getAllUserTasks(user.id);
+      // Filter tasks assigned to current user, or user's active tasks
+      const myTasks = allTasks.filter(
+        (item) => !item.task.ownerId || item.task.ownerId === user.id
+      );
+      setAssignedTasks(myTasks);
+    } catch (err) {
+      console.log('Error loading dashboard data:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 800);
+    loadData();
   };
+
+  const userInitial = user?.username
+    ? user.username.substring(0, 1).toUpperCase()
+    : 'U';
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -96,19 +78,61 @@ export default function DashboardScreen() {
         >
           {/* Card: Assigned to Me */}
           <View style={styles.assignedCard}>
-            <Text style={styles.assignedTitle}>Assigned to Me</Text>
-            <View style={styles.assignedContentRow}>
-              <Text style={styles.assignedEmptyText}>
-                Không tìm thấy hạng mục công việc phù hợp.
-              </Text>
+            <View style={styles.cardHeaderRow}>
+              <Text style={styles.assignedTitle}>Assigned to Me</Text>
               <TouchableOpacity
                 onPress={onRefresh}
                 style={styles.reloadBtn}
                 activeOpacity={0.7}
               >
-                <RotateCw size={18} color="#579DFF" />
+                <RotateCw size={16} color="#579DFF" />
               </TouchableOpacity>
             </View>
+
+            {loading ? (
+              <ActivityIndicator
+                size="small"
+                color="#579DFF"
+                style={{ marginVertical: 12 }}
+              />
+            ) : assignedTasks.length === 0 ? (
+              <View style={styles.assignedEmptyBox}>
+                <Text style={styles.assignedEmptyText}>
+                  Không tìm thấy hạng mục công việc phù hợp.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.tasksList}>
+                {assignedTasks.slice(0, 5).map(({ task, spaceName }) => (
+                  <TouchableOpacity
+                    key={task.id}
+                    style={styles.taskRow}
+                    activeOpacity={0.75}
+                    onPress={() => router.push('/(tabs)/tasks')}
+                  >
+                    <SquareCheck
+                      size={18}
+                      color={task.status === 'DONE' ? '#579DFF' : '#8C9BAB'}
+                      style={{ marginRight: 10 }}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.taskTitle,
+                          task.status === 'DONE' && styles.strikeThrough,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {task.title}
+                      </Text>
+                      <Text style={styles.taskMeta}>
+                        #{task.id} • {spaceName} • {task.status}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* Section: Luồng hoạt động */}
@@ -116,77 +140,54 @@ export default function DashboardScreen() {
             <Text style={styles.activitySectionTitle}>Luồng hoạt động</Text>
 
             <View style={styles.activityBox}>
-              {/* Group: 19 tháng 10 */}
-              <Text style={styles.dateGroupHeader}>19 tháng 10</Text>
-
-              {ACTIVITIES_GROUP_1.map((item, index) => (
-                <View key={item.id} style={styles.activityItem}>
-                  {/* Left Avatar */}
-                  <View
-                    style={[
-                      styles.itemAvatar,
-                      { backgroundColor: item.avatarColor },
-                    ]}
-                  >
-                    <Text style={styles.itemAvatarText}>{item.avatarText}</Text>
-                  </View>
-
-                  {/* Right Details */}
-                  <View style={styles.itemDetails}>
-                    <Text style={styles.itemMessage}>{item.message}</Text>
-
-                    <View style={styles.itemMetaRow}>
-                      {item.issueKey && (
-                        <View style={styles.issueKeyBadge}>
-                          <Text style={styles.issueKeyText}>{item.issueKey}</Text>
+              {loading ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#579DFF"
+                  style={{ marginVertical: 20 }}
+                />
+              ) : assignedTasks.length === 0 ? (
+                <View style={styles.emptyActivityBox}>
+                  <Activity size={32} color="#8C9BAB" style={{ marginBottom: 10 }} />
+                  <Text style={styles.emptyActivityTitle}>
+                    Chưa có hoạt động nào được ghi nhận
+                  </Text>
+                  <Text style={styles.emptyActivitySub}>
+                    Các cập nhật trạng thái và thay đổi công việc sẽ tự động hiển thị tại đây khi dự án hoạt động.
+                  </Text>
+                </View>
+              ) : (
+                <View>
+                  <Text style={styles.dateGroupHeader}>Hoạt động gần đây</Text>
+                  {assignedTasks.map(({ task, spaceName }) => (
+                    <View key={task.id} style={styles.activityItem}>
+                      <View style={styles.itemAvatar}>
+                        <Text style={styles.itemAvatarText}>{userInitial}</Text>
+                      </View>
+                      <View style={styles.itemDetails}>
+                        <Text style={styles.itemMessage}>
+                          Đang xử lý nhiệm vụ "{task.title}" tại {spaceName}
+                        </Text>
+                        <View style={styles.itemMetaRow}>
+                          <View style={styles.issueKeyBadge}>
+                            <Text style={styles.issueKeyText}>#{task.id}</Text>
+                          </View>
+                          <View style={styles.dateWrap}>
+                            <SquareCheck
+                              size={13}
+                              color="#579DFF"
+                              style={{ marginRight: 4 }}
+                            />
+                            <Text style={styles.itemDateText}>
+                              {task.status}
+                            </Text>
+                          </View>
                         </View>
-                      )}
-
-                      <View style={styles.dateWrap}>
-                        <SquareCheck size={14} color="#579DFF" style={{ marginRight: 4 }} />
-                        <Text style={styles.itemDateText}>{item.date}</Text>
                       </View>
                     </View>
-                  </View>
+                  ))}
                 </View>
-              ))}
-
-              <View style={styles.groupDivider} />
-
-              {/* Group: 05 tháng 10 */}
-              <Text style={styles.dateGroupHeader}>05 tháng 10</Text>
-
-              {ACTIVITIES_GROUP_2.map((item, index) => (
-                <View key={item.id} style={styles.activityItem}>
-                  {/* Left Avatar */}
-                  <View
-                    style={[
-                      styles.itemAvatar,
-                      { backgroundColor: item.avatarColor },
-                    ]}
-                  >
-                    <Text style={styles.itemAvatarText}>{item.avatarText}</Text>
-                  </View>
-
-                  {/* Right Details */}
-                  <View style={styles.itemDetails}>
-                    <Text style={styles.itemMessage}>{item.message}</Text>
-
-                    <View style={styles.itemMetaRow}>
-                      {item.issueKey && (
-                        <View style={styles.issueKeyBadge}>
-                          <Text style={styles.issueKeyText}>{item.issueKey}</Text>
-                        </View>
-                      )}
-
-                      <View style={styles.dateWrap}>
-                        <SquareCheck size={14} color="#579DFF" style={{ marginRight: 4 }} />
-                        <Text style={styles.itemDateText}>{item.date}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              ))}
+              )}
             </View>
           </View>
 
@@ -219,26 +220,51 @@ const styles = StyleSheet.create({
     borderColor: '#22272B',
     marginBottom: 20,
   },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
   assignedTitle: {
     color: '#E6EDF3',
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 12,
   },
-  assignedContentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  reloadBtn: {
+    padding: 4,
+  },
+  assignedEmptyBox: {
+    paddingVertical: 10,
   },
   assignedEmptyText: {
     color: '#8C9BAB',
     fontSize: 13,
-    flex: 1,
     lineHeight: 18,
   },
-  reloadBtn: {
-    padding: 6,
-    marginLeft: 8,
+  tasksList: {
+    gap: 10,
+  },
+  taskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#282E33',
+  },
+  taskTitle: {
+    color: '#E6EDF3',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  strikeThrough: {
+    textDecorationLine: 'line-through',
+    color: '#8C9BAB',
+  },
+  taskMeta: {
+    color: '#8C9BAB',
+    fontSize: 11,
+    marginTop: 2,
   },
   activitySection: {
     marginBottom: 24,
@@ -256,34 +282,47 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#22272B',
   },
+  emptyActivityBox: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 12,
+  },
+  emptyActivityTitle: {
+    color: '#E6EDF3',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  emptyActivitySub: {
+    color: '#8C9BAB',
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 17,
+  },
   dateGroupHeader: {
     color: '#8C9BAB',
     fontSize: 13,
     fontWeight: '700',
     marginBottom: 14,
-    marginTop: 4,
-  },
-  groupDivider: {
-    height: 1,
-    backgroundColor: '#282E33',
-    marginVertical: 14,
   },
   activityItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   itemAvatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
+    backgroundColor: '#1D3B6A',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
     marginTop: 2,
   },
   itemAvatarText: {
-    color: '#FFFFFF',
+    color: '#579DFF',
     fontWeight: '700',
     fontSize: 13,
   },
@@ -293,7 +332,7 @@ const styles = StyleSheet.create({
   itemMessage: {
     color: '#E6EDF3',
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 19,
     fontWeight: '500',
   },
   itemMetaRow: {
