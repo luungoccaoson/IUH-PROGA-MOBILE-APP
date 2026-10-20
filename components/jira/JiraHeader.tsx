@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useThemeStore } from '../../stores/useThemeStore';
 
 interface JiraHeaderProps {
   title?: string;
@@ -12,6 +13,7 @@ interface JiraHeaderProps {
 export function JiraHeader({ title, renderCenter, rightActions }: JiraHeaderProps) {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { colors } = useThemeStore();
 
   const userInitials = user?.username
     ? user.username.substring(0, 2).toUpperCase()
@@ -22,7 +24,12 @@ export function JiraHeader({ title, renderCenter, rightActions }: JiraHeaderProp
   };
 
   return (
-    <View style={styles.headerContainer}>
+    <View
+      style={[
+        styles.headerContainer,
+        { backgroundColor: colors.headerBg, borderBottomColor: colors.headerBorder },
+      ]}
+    >
       <View style={styles.leftRow}>
         <TouchableOpacity
           style={styles.avatarButton}
@@ -32,7 +39,9 @@ export function JiraHeader({ title, renderCenter, rightActions }: JiraHeaderProp
           <Text style={styles.avatarText}>{userInitials}</Text>
         </TouchableOpacity>
 
-        {title && <Text style={styles.headerTitle}>{title}</Text>}
+        {title && (
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{title}</Text>
+        )}
       </View>
 
       {renderCenter && <View style={styles.centerContainer}>{renderCenter()}</View>}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -14,6 +14,7 @@ import { X, UserPlus, Search } from 'lucide-react-native';
 import { workspaceService } from '../services/workspace.service';
 import { userService } from '../services/user.service';
 import { User } from '../types';
+import { useThemeStore, ThemeColors } from '../stores/useThemeStore';
 
 interface AddWorkspaceMemberModalProps {
   visible: boolean;
@@ -30,6 +31,9 @@ export const AddWorkspaceMemberModal: React.FC<AddWorkspaceMemberModalProps> = (
   onClose,
   onMemberInvited,
 }) => {
+  const { colors, isDark } = useThemeStore();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [candidates, setCandidates] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -96,21 +100,21 @@ export const AddWorkspaceMemberModal: React.FC<AddWorkspaceMemberModalProps> = (
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerTitleWrap}>
-              <UserPlus size={20} color="#579DFF" style={{ marginRight: 8 }} />
+              <UserPlus size={20} color={colors.primary} style={{ marginRight: 8 }} />
               <Text style={styles.title}>Thêm thành viên vào Workspace</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <X size={20} color="#8C9BAB" />
+              <X size={20} color={colors.subText} />
             </TouchableOpacity>
           </View>
 
           {/* Search bar */}
           <View style={styles.searchBar}>
-            <Search size={16} color="#8C9BAB" style={{ marginRight: 8 }} />
+            <Search size={16} color={colors.subText} style={{ marginRight: 8 }} />
             <TextInput
               style={styles.searchInput}
               placeholder="Tìm theo tên người dùng, email..."
-              placeholderTextColor="#626F86"
+              placeholderTextColor={colors.mutedText}
               value={search}
               onChangeText={setSearch}
             />
@@ -120,7 +124,7 @@ export const AddWorkspaceMemberModal: React.FC<AddWorkspaceMemberModalProps> = (
           <ScrollView style={styles.candidateList} showsVerticalScrollIndicator={false}>
             {loading ? (
               <View style={styles.centerBox}>
-                <ActivityIndicator size="small" color="#579DFF" />
+                <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={styles.loadingText}>Đang tải người dùng hệ thống...</Text>
               </View>
             ) : filtered.length === 0 ? (
@@ -177,122 +181,123 @@ export const AddWorkspaceMemberModal: React.FC<AddWorkspaceMemberModalProps> = (
   );
 };
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    backgroundColor: '#1C2127',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '80%',
-    borderWidth: 1,
-    borderColor: '#282E33',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  headerTitleWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  title: {
-    color: '#E6EDF3',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  closeBtn: {
-    padding: 4,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#161A1D',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#282E33',
-    marginBottom: 16,
-  },
-  searchInput: {
-    flex: 1,
-    color: '#E6EDF3',
-    fontSize: 13,
-    padding: 0,
-  },
-  candidateList: {
-    maxHeight: 360,
-  },
-  centerBox: {
-    paddingVertical: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    marginTop: 8,
-  },
-  emptyText: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-    lineHeight: 18,
-  },
-  candidateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#22272B',
-  },
-  avatarCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#1D3B6A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  avatarText: {
-    color: '#579DFF',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  candidateInfo: {
-    flex: 1,
-    marginRight: 10,
-  },
-  candidateName: {
-    color: '#E6EDF3',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  candidateEmail: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  inviteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0C66E4',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  inviteBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-});
+const getStyles = (colors: ThemeColors, isDark: boolean) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: 'flex-end',
+    },
+    modalCard: {
+      backgroundColor: colors.cardBg,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: 20,
+      maxHeight: '80%',
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 16,
+    },
+    headerTitleWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    title: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    closeBtn: {
+      padding: 4,
+    },
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.inputBg,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      marginBottom: 16,
+    },
+    searchInput: {
+      flex: 1,
+      color: colors.text,
+      fontSize: 13,
+      padding: 0,
+    },
+    candidateList: {
+      maxHeight: 360,
+    },
+    centerBox: {
+      paddingVertical: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    loadingText: {
+      color: colors.subText,
+      fontSize: 12,
+      marginTop: 8,
+    },
+    emptyText: {
+      color: colors.subText,
+      fontSize: 13,
+      textAlign: 'center',
+      paddingHorizontal: 20,
+      lineHeight: 18,
+    },
+    candidateRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    avatarCircle: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: isDark ? '#1D3B6A' : '#DEEBFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    avatarText: {
+      color: isDark ? '#579DFF' : '#0052CC',
+      fontWeight: '700',
+      fontSize: 13,
+    },
+    candidateInfo: {
+      flex: 1,
+      marginRight: 10,
+    },
+    candidateName: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    candidateEmail: {
+      color: colors.subText,
+      fontSize: 12,
+      marginTop: 2,
+    },
+    inviteBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 8,
+    },
+    inviteBtnText: {
+      color: '#FFFFFF',
+      fontSize: 12,
+      fontWeight: '700',
+    },
+  });

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { User, Calendar, CheckCircle2, Circle, Clock, Trash2 } from 'lucide-react-native';
+import { User, Calendar, Trash2 } from 'lucide-react-native';
 import { Task, TaskStatus } from '../types';
+import { useThemeStore, ThemeColors } from '../stores/useThemeStore';
 
 interface TaskItemCardProps {
   task: Task;
@@ -14,41 +15,42 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   onStatusChange,
   onDelete,
 }) => {
+  const { colors, isDark } = useThemeStore();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const getPriorityStyle = (priority: string) => {
     switch (priority) {
       case 'URGENT':
-        return { bg: '#FDEDEC', text: '#D93025' };
+        return { bg: isDark ? '#42221F' : '#FDEDEC', text: '#FF5630' };
       case 'HIGH':
-        return { bg: '#FEF7E0', text: '#B06000' };
+        return { bg: isDark ? '#332E1B' : '#FEF7E0', text: '#FFAB00' };
       case 'LOW':
-        return { bg: '#F3F4F6', text: '#4B5563' };
+        return { bg: isDark ? '#22272B' : '#F3F4F6', text: colors.subText };
       default:
-        return { bg: '#E8F0FE', text: '#1A73E8' }; // MEDIUM
+        return { bg: isDark ? '#1C2B42' : '#DEEBFF', text: '#579DFF' }; // MEDIUM
     }
   };
 
   const getStatusStyle = (status: TaskStatus) => {
     switch (status) {
       case 'DONE':
-        return { bg: '#E6F4EA', text: '#137333', label: 'DONE' };
+        return { bg: isDark ? '#1C3829' : '#E3FCEF', text: '#36B37E', label: 'DONE' };
       case 'IN_PROGRESS':
-        return { bg: '#E8F0FE', text: '#1A73E8', label: 'IN PROGRESS' };
-      case 'REVIEW':
-        return { bg: '#FEF7E0', text: '#B06000', label: 'REVIEW' };
+        return { bg: isDark ? '#1C2B42' : '#DEEBFF', text: '#579DFF', label: 'IN PROGRESS' };
       default:
-        return { bg: '#F3F4F6', text: '#4B5563', label: 'TODO' };
+        return { bg: isDark ? '#22272B' : '#F4F5F7', text: colors.subText, label: 'TODO' };
     }
   };
 
   const priorityStyle = getPriorityStyle(task.priority);
   const statusStyle = getStatusStyle(task.status);
 
-  // Cycle status on tap: TODO -> IN_PROGRESS -> REVIEW -> DONE -> TODO
+  // Cycle status on tap: TODO -> IN_PROGRESS -> DONE -> TODO
   const handleNextStatus = () => {
     if (!onStatusChange) return;
     const statusMap: Record<TaskStatus, TaskStatus> = {
       TODO: 'IN_PROGRESS',
-      IN_PROGRESS: 'REVIEW',
+      IN_PROGRESS: 'DONE',
       REVIEW: 'DONE',
       DONE: 'TODO',
     };
@@ -78,7 +80,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
           {onDelete && (
             <TouchableOpacity style={styles.deleteBtn} onPress={onDelete}>
-              <Trash2 size={14} color="#9CA3AF" />
+              <Trash2 size={14} color={colors.subText} />
             </TouchableOpacity>
           )}
         </View>
@@ -94,7 +96,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
       <View style={styles.footer}>
         <View style={styles.assignee}>
           <View style={styles.avatar}>
-            <User size={12} color="#4B5563" />
+            <User size={12} color={colors.subText} />
           </View>
           <Text style={styles.assigneeName} numberOfLines={1}>
             {task.ownerName || 'Chưa giao'}
@@ -103,7 +105,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
 
         {!!task.dueDate && (
           <View style={styles.dueDate}>
-            <Calendar size={12} color="#6B7280" />
+            <Calendar size={12} color={colors.subText} />
             <Text style={styles.dueText}>
               {new Date(task.dueDate).toLocaleDateString('vi-VN')}
             </Text>
@@ -114,98 +116,99 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  taskCode: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#9CA3AF',
-  },
-  rightBadges: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-  deleteBtn: {
-    padding: 2,
-    marginLeft: 4,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-    lineHeight: 18,
-  },
-  description: {
-    fontSize: 12,
-    color: '#6B7280',
-    lineHeight: 16,
-    marginBottom: 10,
-  },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  assignee: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  avatar: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#E5E7EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  assigneeName: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#4B5563',
-    maxWidth: 110,
-  },
-  dueDate: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  dueText: {
-    fontSize: 10,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-});
+const getStyles = (colors: ThemeColors, isDark: boolean) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 14,
+      padding: 14,
+      marginBottom: 10,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: isDark ? 0.3 : 0.04,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 6,
+    },
+    taskCode: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: colors.mutedText,
+    },
+    rightBadges: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    badge: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
+    },
+    badgeText: {
+      fontSize: 9,
+      fontWeight: '800',
+      letterSpacing: 0.3,
+    },
+    deleteBtn: {
+      padding: 2,
+      marginLeft: 4,
+    },
+    title: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 4,
+      lineHeight: 18,
+    },
+    description: {
+      fontSize: 12,
+      color: colors.subText,
+      lineHeight: 16,
+      marginBottom: 10,
+    },
+    footer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    assignee: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    avatar: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: colors.inputBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    assigneeName: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.subText,
+      maxWidth: 110,
+    },
+    dueDate: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    dueText: {
+      fontSize: 10,
+      color: colors.subText,
+      fontWeight: '500',
+    },
+  });

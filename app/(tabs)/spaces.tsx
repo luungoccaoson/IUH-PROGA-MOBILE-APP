@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import {
   FolderPlus,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useThemeStore, ThemeColors } from '../../stores/useThemeStore';
 import { workspaceService } from '../../services/workspace.service';
 import { recentSpacesService } from '../../services/recentSpaces.service';
 import { Workspace, Space, ClassifiedWorkspaces } from '../../types';
@@ -41,6 +42,8 @@ interface SpaceItemView {
 export default function SpacesScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { colors, isDark } = useThemeStore();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [items, setItems] = useState<SpaceItemView[]>([]);
   const [recentSpaceIds, setRecentSpaceIds] = useState<number[]>([]);
@@ -190,7 +193,7 @@ export default function SpacesScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#101214" />
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.headerBg} />
       <View style={styles.container}>
         {/* Jira Header */}
         <JiraHeader
@@ -198,14 +201,14 @@ export default function SpacesScreen() {
           rightActions={
             <>
               <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
-                <Search size={22} color="#E6EDF3" />
+                <Search size={22} color={colors.text} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconBtn}
                 activeOpacity={0.7}
                 onPress={() => setCreateWsModalVisible(true)}
               >
-                <Plus size={24} color="#E6EDF3" />
+                <Plus size={24} color={colors.text} />
               </TouchableOpacity>
             </>
           }
@@ -218,14 +221,14 @@ export default function SpacesScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#579DFF"
-              colors={['#579DFF']}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
         >
           {loading ? (
             <View style={styles.centerContainer}>
-              <ActivityIndicator size="small" color="#579DFF" />
+              <ActivityIndicator size="small" color={colors.primary} />
               <Text style={styles.loadingText}>Đang tải không gian...</Text>
             </View>
           ) : items.length === 0 ? (
@@ -280,7 +283,7 @@ export default function SpacesScreen() {
                             >
                               <Star
                                 size={20}
-                                color={isFav ? '#F59E0B' : '#8C9BAB'}
+                                color={isFav ? '#F59E0B' : colors.subText}
                                 fill={isFav ? '#F59E0B' : 'transparent'}
                               />
                             </TouchableOpacity>
@@ -323,7 +326,7 @@ export default function SpacesScreen() {
                           >
                             <Star
                               size={20}
-                              color={isFav ? '#F59E0B' : '#8C9BAB'}
+                              color={isFav ? '#F59E0B' : colors.subText}
                               fill={isFav ? '#F59E0B' : 'transparent'}
                             />
                           </TouchableOpacity>
@@ -349,124 +352,125 @@ export default function SpacesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#101214',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#101214',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  iconBtn: {
-    padding: 4,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 10,
-  },
-  cardGroup: {
-    backgroundColor: '#1C2127',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#22272B',
-    overflow: 'hidden',
-  },
-  groupItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-  },
-  groupDivider: {
-    height: 1,
-    backgroundColor: '#22272B',
-    marginLeft: 66,
-  },
-  itemIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  itemInfo: {
-    flex: 1,
-  },
-  itemName: {
-    color: '#E6EDF3',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  itemCode: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    marginTop: 2,
-    letterSpacing: 0.5,
-  },
-  starBtn: {
-    padding: 4,
-  },
-  centerContainer: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    marginTop: 10,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 50,
-    paddingHorizontal: 20,
-  },
-  emptyIconCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: '#161A1D',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    color: '#E6EDF3',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 20,
-  },
-  emptyActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1D3B6A',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    gap: 8,
-  },
-  emptyActionBtnText: {
-    color: '#579DFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-});
+const getStyles = (colors: ThemeColors, isDark: boolean) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 16,
+      paddingTop: 16,
+    },
+    iconBtn: {
+      padding: 4,
+    },
+    section: {
+      marginBottom: 24,
+    },
+    sectionTitle: {
+      color: colors.subText,
+      fontSize: 13,
+      fontWeight: '600',
+      marginBottom: 10,
+    },
+    cardGroup: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      overflow: 'hidden',
+    },
+    groupItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 14,
+    },
+    groupDivider: {
+      height: 1,
+      backgroundColor: colors.divider,
+      marginLeft: 66,
+    },
+    itemIconWrap: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 14,
+    },
+    itemInfo: {
+      flex: 1,
+    },
+    itemName: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    itemCode: {
+      color: colors.subText,
+      fontSize: 12,
+      marginTop: 2,
+      letterSpacing: 0.5,
+    },
+    starBtn: {
+      padding: 4,
+    },
+    centerContainer: {
+      padding: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    loadingText: {
+      color: colors.subText,
+      fontSize: 13,
+      marginTop: 10,
+    },
+    emptyContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 50,
+      paddingHorizontal: 20,
+    },
+    emptyIconCircle: {
+      width: 68,
+      height: 68,
+      borderRadius: 34,
+      backgroundColor: colors.cardInner,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
+    emptyTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+      marginBottom: 8,
+    },
+    emptySubtitle: {
+      color: colors.subText,
+      fontSize: 13,
+      textAlign: 'center',
+      lineHeight: 18,
+      marginBottom: 20,
+    },
+    emptyActionBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.primaryBg,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 12,
+      gap: 8,
+    },
+    emptyActionBtnText: {
+      color: colors.primary,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+  });

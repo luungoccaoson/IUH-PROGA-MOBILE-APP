@@ -1,8 +1,18 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { Sparkles, Send, Bot, User, PlusCircle } from 'lucide-react-native';
 import { AgentType, ChatMessage, DeconstructedTaskItem } from '../types';
 import { workspaceService } from '../services/workspace.service';
+import { useThemeStore, ThemeColors } from '../stores/useThemeStore';
 
 interface AIChatViewProps {
   spaceId?: number;
@@ -13,16 +23,28 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
   spaceId,
   onTasksCreated,
 }) => {
+  const { colors, isDark } = useThemeStore();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [selectedAgent, setSelectedAgent] = useState<AgentType>('REQUIREMENT');
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 1,
       threadId: 1,
       senderType: 'ASSISTANT',
-      messageContent: 'Xin chào! Tôi là Requirement Agent. Hãy mô tả tính năng bạn cần xây dựng, tôi sẽ tự động phân rã thành các công việc nhỏ cho Space của bạn.',
+      messageContent:
+        'Xin chào! Tôi là Requirement Agent. Hãy mô tả tính năng bạn cần xây dựng, tôi sẽ tự động phân rã thành các công việc nhỏ cho Space của bạn.',
       jsonPayload: JSON.stringify([
-        { title: 'Tích hợp Đăng nhập JWT & Storage', description: 'Bảo mật dữ liệu user', priority: 'URGENT' },
-        { title: 'Dựng bảng Kanban 4 cột', description: 'Hỗ trợ chuyển trạng thái task', priority: 'HIGH' },
+        {
+          title: 'Tích hợp Đăng nhập JWT & Storage',
+          description: 'Bảo mật dữ liệu user',
+          priority: 'URGENT',
+        },
+        {
+          title: 'Dựng bảng Kanban 3 cột',
+          description: 'Hỗ trợ chuyển trạng thái task',
+          priority: 'HIGH',
+        },
       ]),
       createdAt: new Date().toISOString(),
     },
@@ -64,7 +86,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
 
   const handleBatchCreateTasks = async (jsonPayloadStr: string) => {
     if (!spaceId) {
-      alert('Vui lòng mở một Space cụ thể trước khi thêm các Task này.');
+      Alert.alert('Thông báo', 'Vui lòng mở một Space cụ thể trước khi thêm các Task này.');
       return;
     }
 
@@ -80,11 +102,11 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
           status: 'TODO',
         });
       }
-      alert(`Đã thêm thành công ${items.length} công việc vào Space!`);
+      Alert.alert('Thành công', `Đã thêm thành công ${items.length} công việc vào Space!`);
       if (onTasksCreated) onTasksCreated();
     } catch (err) {
       console.error('Error batch creating tasks:', err);
-      alert('Không thể tự động tạo công việc. Vui lòng kiểm tra lại.');
+      Alert.alert('Lỗi', 'Không thể tự động tạo công việc. Vui lòng kiểm tra lại.');
     } finally {
       setCreatingTasks(false);
     }
@@ -95,33 +117,70 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
       {/* Agent Selector Header */}
       <View style={styles.agentBar}>
         <Text style={styles.agentLabel}>CHỌN AI AGENT:</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.agentList}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.agentList}
+        >
           <TouchableOpacity
-            style={[styles.agentChip, selectedAgent === 'REQUIREMENT' && styles.agentChipActive]}
+            style={[
+              styles.agentChip,
+              selectedAgent === 'REQUIREMENT' && styles.agentChipActive,
+            ]}
             onPress={() => setSelectedAgent('REQUIREMENT')}
           >
-            <Sparkles size={12} color={selectedAgent === 'REQUIREMENT' ? '#FFFFFF' : '#137333'} />
-            <Text style={[styles.agentChipText, selectedAgent === 'REQUIREMENT' && styles.agentChipTextActive]}>
+            <Sparkles
+              size={12}
+              color={selectedAgent === 'REQUIREMENT' ? '#FFFFFF' : '#36B37E'}
+            />
+            <Text
+              style={[
+                styles.agentChipText,
+                selectedAgent === 'REQUIREMENT' && styles.agentChipTextActive,
+              ]}
+            >
               Requirement Agent
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.agentChip, selectedAgent === 'PM' && styles.agentChipActive]}
+            style={[
+              styles.agentChip,
+              selectedAgent === 'PM' && styles.agentChipActive,
+            ]}
             onPress={() => setSelectedAgent('PM')}
           >
-            <Sparkles size={12} color={selectedAgent === 'PM' ? '#FFFFFF' : '#1A73E8'} />
-            <Text style={[styles.agentChipText, selectedAgent === 'PM' && styles.agentChipTextActive]}>
+            <Sparkles
+              size={12}
+              color={selectedAgent === 'PM' ? '#FFFFFF' : '#579DFF'}
+            />
+            <Text
+              style={[
+                styles.agentChipText,
+                selectedAgent === 'PM' && styles.agentChipTextActive,
+              ]}
+            >
               PM Agent
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.agentChip, selectedAgent === 'TECHNICAL_ADVISOR' && styles.agentChipActive]}
+            style={[
+              styles.agentChip,
+              selectedAgent === 'TECHNICAL_ADVISOR' && styles.agentChipActive,
+            ]}
             onPress={() => setSelectedAgent('TECHNICAL_ADVISOR')}
           >
-            <Sparkles size={12} color={selectedAgent === 'TECHNICAL_ADVISOR' ? '#FFFFFF' : '#B06000'} />
-            <Text style={[styles.agentChipText, selectedAgent === 'TECHNICAL_ADVISOR' && styles.agentChipTextActive]}>
+            <Sparkles
+              size={12}
+              color={selectedAgent === 'TECHNICAL_ADVISOR' ? '#FFFFFF' : '#FFAB00'}
+            />
+            <Text
+              style={[
+                styles.agentChipText,
+                selectedAgent === 'TECHNICAL_ADVISOR' && styles.agentChipTextActive,
+              ]}
+            >
               Tech Advisor Agent
             </Text>
           </TouchableOpacity>
@@ -129,7 +188,10 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
       </View>
 
       {/* Messages Scroll Area */}
-      <ScrollView style={styles.messageContainer} contentContainerStyle={styles.messageContent}>
+      <ScrollView
+        style={styles.messageContainer}
+        contentContainerStyle={styles.messageContent}
+      >
         {messages.map((msg) => {
           const isUser = msg.senderType === 'USER';
           let parsedTasks: DeconstructedTaskItem[] = [];
@@ -140,14 +202,25 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
           }
 
           return (
-            <View key={msg.id} style={[styles.msgRow, isUser ? styles.msgUserRow : styles.msgAssistantRow]}>
+            <View
+              key={msg.id}
+              style={[
+                styles.msgRow,
+                isUser ? styles.msgUserRow : styles.msgAssistantRow,
+              ]}
+            >
               {!isUser && (
                 <View style={styles.avatarBot}>
-                  <Bot size={14} color="#137333" />
+                  <Bot size={14} color="#36B37E" />
                 </View>
               )}
 
-              <View style={[styles.bubble, isUser ? styles.userBubble : styles.assistantBubble]}>
+              <View
+                style={[
+                  styles.bubble,
+                  isUser ? styles.userBubble : styles.assistantBubble,
+                ]}
+              >
                 <Text style={[styles.msgText, isUser && styles.userMsgText]}>
                   {msg.messageContent}
                 </Text>
@@ -178,7 +251,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
                       ) : (
                         <>
                           <PlusCircle size={14} color="#FFFFFF" />
-                          <Text style={styles.addTasksText}>ĐỒNG Ý TẠO CÁC TASK NÀY VÀO SPACE</Text>
+                          <Text style={styles.addTasksText}>ĐỒNG Ý TẠO CÁC TASK NÀY</Text>
                         </>
                       )}
                     </TouchableOpacity>
@@ -198,10 +271,16 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
         {loading && (
           <View style={styles.msgAssistantRow}>
             <View style={styles.avatarBot}>
-              <Bot size={14} color="#137333" />
+              <Bot size={14} color="#36B37E" />
             </View>
-            <View style={[styles.bubble, styles.assistantBubble, { flexDirection: 'row', gap: 6, alignItems: 'center' }]}>
-              <ActivityIndicator color="#111827" size="small" />
+            <View
+              style={[
+                styles.bubble,
+                styles.assistantBubble,
+                { flexDirection: 'row', gap: 6, alignItems: 'center' },
+              ]}
+            >
+              <ActivityIndicator color={colors.primary} size="small" />
               <Text style={styles.msgText}>AI đang phân tích yêu cầu...</Text>
             </View>
           </View>
@@ -213,7 +292,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
         <TextInput
           style={styles.input}
           placeholder={`Nhập yêu cầu cho ${selectedAgent}...`}
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={colors.mutedText}
           value={inputPrompt}
           onChangeText={setInputPrompt}
           onSubmitEditing={handleSendMessage}
@@ -230,191 +309,193 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    overflow: 'hidden',
-  },
-  agentBar: {
-    padding: 12,
-    backgroundColor: '#F6F5EF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  agentLabel: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#6B7280',
-    marginBottom: 6,
-    letterSpacing: 0.5,
-  },
-  agentList: {
-    gap: 8,
-  },
-  agentChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  agentChipActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
-  },
-  agentChipText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#4B5563',
-  },
-  agentChipTextActive: {
-    color: '#FFFFFF',
-  },
-  messageContainer: {
-    flex: 1,
-    padding: 14,
-  },
-  messageContent: {
-    gap: 12,
-    paddingBottom: 10,
-  },
-  msgRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  msgUserRow: {
-    justifyContent: 'flex-end',
-  },
-  msgAssistantRow: {
-    justifyContent: 'flex-start',
-  },
-  avatarBot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#E6F4EA',
-    borderWidth: 1,
-    borderColor: '#D1E7DD',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarUser: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bubble: {
-    maxWidth: '82%',
-    padding: 12,
-    borderRadius: 16,
-  },
-  userBubble: {
-    backgroundColor: '#111827',
-    borderBottomRightRadius: 4,
-  },
-  assistantBubble: {
-    backgroundColor: '#F6F5EF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderBottomLeftRadius: 4,
-  },
-  msgText: {
-    fontSize: 13,
-    color: '#111827',
-    lineHeight: 18,
-  },
-  userMsgText: {
-    color: '#FFFFFF',
-  },
-  taskPreviewCard: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  previewTitle: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#137333',
-    marginBottom: 8,
-  },
-  previewItem: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 6,
-  },
-  previewItemNumber: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#6B7280',
-  },
-  previewItemTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  previewItemDesc: {
-    fontSize: 10,
-    color: '#6B7280',
-  },
-  addTasksBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 8,
-    paddingVertical: 8,
-    backgroundColor: '#137333',
-    borderRadius: 8,
-  },
-  addTasksText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    gap: 8,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: '#F6F5EF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    fontSize: 13,
-    color: '#111827',
-  },
-  sendBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sendBtnDisabled: {
-    opacity: 0.5,
-  },
-});
+const getStyles = (colors: ThemeColors, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.cardBg,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      overflow: 'hidden',
+    },
+    agentBar: {
+      padding: 12,
+      backgroundColor: colors.headerBg,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.cardBorder,
+    },
+    agentLabel: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: colors.subText,
+      marginBottom: 8,
+      letterSpacing: 0.5,
+    },
+    agentList: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    agentChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      backgroundColor: colors.inputBg,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+    },
+    agentChipActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    agentChipText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.subText,
+    },
+    agentChipTextActive: {
+      color: '#FFFFFF',
+    },
+    messageContainer: {
+      flex: 1,
+      padding: 12,
+    },
+    messageContent: {
+      paddingBottom: 16,
+    },
+    msgRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: 8,
+      marginBottom: 12,
+    },
+    msgUserRow: {
+      justifyContent: 'flex-end',
+    },
+    msgAssistantRow: {
+      justifyContent: 'flex-start',
+    },
+    avatarBot: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: isDark ? '#1C3829' : '#E3FCEF',
+      borderWidth: 1,
+      borderColor: isDark ? '#216E4E' : '#ABF5D1',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarUser: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    bubble: {
+      maxWidth: '82%',
+      padding: 12,
+      borderRadius: 16,
+    },
+    userBubble: {
+      backgroundColor: colors.primary,
+      borderBottomRightRadius: 4,
+    },
+    assistantBubble: {
+      backgroundColor: isDark ? '#161A1D' : '#F4F5F7',
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderBottomLeftRadius: 4,
+    },
+    msgText: {
+      fontSize: 13,
+      color: colors.text,
+      lineHeight: 18,
+    },
+    userMsgText: {
+      color: '#FFFFFF',
+    },
+    taskPreviewCard: {
+      marginTop: 10,
+      padding: 10,
+      backgroundColor: colors.cardBg,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    previewTitle: {
+      fontSize: 10,
+      fontWeight: '800',
+      color: '#36B37E',
+      marginBottom: 8,
+    },
+    previewItem: {
+      flexDirection: 'row',
+      gap: 6,
+      marginBottom: 6,
+    },
+    previewItemNumber: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.mutedText,
+    },
+    previewItemTitle: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    previewItemDesc: {
+      fontSize: 10,
+      color: colors.subText,
+    },
+    addTasksBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      marginTop: 8,
+      paddingVertical: 8,
+      backgroundColor: '#36B37E',
+      borderRadius: 8,
+    },
+    addTasksText: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: '#FFFFFF',
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 10,
+      borderTopWidth: 1,
+      borderTopColor: colors.cardBorder,
+      backgroundColor: colors.headerBg,
+      gap: 8,
+    },
+    input: {
+      flex: 1,
+      backgroundColor: colors.inputBg,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      borderRadius: 20,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      fontSize: 13,
+      color: colors.text,
+    },
+    sendBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sendBtnDisabled: {
+      opacity: 0.5,
+    },
+  });

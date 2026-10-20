@@ -8,22 +8,25 @@ import {
   JiraBoardIcon,
   JiraBellIcon,
 } from '../../components/jira/JiraIcons';
+import { useThemeStore } from '../../stores/useThemeStore';
 
 export default function TabLayout() {
+  const { colors, isDark } = useThemeStore();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#579DFF',
-        tabBarInactiveTintColor: '#8C9BAB',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.subText,
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
           marginTop: 2,
         },
         tabBarStyle: {
-          backgroundColor: '#101214',
-          borderTopColor: '#22272B',
+          backgroundColor: colors.cardBg,
+          borderTopColor: colors.cardBorder,
           borderTopWidth: 1,
           height: 68,
           paddingBottom: 8,
@@ -37,9 +40,17 @@ export default function TabLayout() {
         options={{
           title: 'Trang chủ',
           tabBarLabel: 'Trang chủ',
-          tabBarIcon: ({ focused, color }) => (
-            <View style={focused ? styles.activePill : styles.inactiveWrap}>
-              <JiraHomeIcon size={20} color={focused ? '#FFFFFF' : '#8C9BAB'} />
+          tabBarIcon: ({ focused }) => (
+            <View
+              style={[
+                focused ? styles.activePill : styles.inactiveWrap,
+                focused && { backgroundColor: isDark ? '#1D3B6A' : '#DEEBFF' },
+              ]}
+            >
+              <JiraHomeIcon
+                size={20}
+                color={focused ? (isDark ? '#FFFFFF' : '#0052CC') : colors.subText}
+              />
             </View>
           ),
         }}
@@ -51,9 +62,17 @@ export default function TabLayout() {
         options={{
           title: 'Không gian',
           tabBarLabel: 'Không gian',
-          tabBarIcon: ({ focused, color }) => (
-            <View style={focused ? styles.activePill : styles.inactiveWrap}>
-              <JiraPlanetIcon size={20} color={focused ? '#FFFFFF' : '#8C9BAB'} />
+          tabBarIcon: ({ focused }) => (
+            <View
+              style={[
+                focused ? styles.activePill : styles.inactiveWrap,
+                focused && { backgroundColor: isDark ? '#1D3B6A' : '#DEEBFF' },
+              ]}
+            >
+              <JiraPlanetIcon
+                size={20}
+                color={focused ? (isDark ? '#FFFFFF' : '#0052CC') : colors.subText}
+              />
             </View>
           ),
         }}
@@ -65,9 +84,17 @@ export default function TabLayout() {
         options={{
           title: 'Tất cả công việc',
           tabBarLabel: 'Tất cả công việc',
-          tabBarIcon: ({ focused, color }) => (
-            <View style={focused ? styles.activePill : styles.inactiveWrap}>
-              <JiraWorkIcon size={20} color={focused ? '#FFFFFF' : '#8C9BAB'} />
+          tabBarIcon: ({ focused }) => (
+            <View
+              style={[
+                focused ? styles.activePill : styles.inactiveWrap,
+                focused && { backgroundColor: isDark ? '#1D3B6A' : '#DEEBFF' },
+              ]}
+            >
+              <JiraWorkIcon
+                size={20}
+                color={focused ? (isDark ? '#FFFFFF' : '#0052CC') : colors.subText}
+              />
             </View>
           ),
         }}
@@ -79,9 +106,17 @@ export default function TabLayout() {
         options={{
           title: 'Bảng thông tin',
           tabBarLabel: 'Bảng thông tin',
-          tabBarIcon: ({ focused, color }) => (
-            <View style={focused ? styles.activePill : styles.inactiveWrap}>
-              <JiraBoardIcon size={20} color={focused ? '#FFFFFF' : '#8C9BAB'} />
+          tabBarIcon: ({ focused }) => (
+            <View
+              style={[
+                focused ? styles.activePill : styles.inactiveWrap,
+                focused && { backgroundColor: isDark ? '#1D3B6A' : '#DEEBFF' },
+              ]}
+            >
+              <JiraBoardIcon
+                size={20}
+                color={focused ? (isDark ? '#FFFFFF' : '#0052CC') : colors.subText}
+              />
             </View>
           ),
         }}
@@ -93,9 +128,17 @@ export default function TabLayout() {
         options={{
           title: 'Thông báo',
           tabBarLabel: 'Thông báo',
-          tabBarIcon: ({ focused, color }) => (
-            <View style={focused ? styles.activePill : styles.inactiveWrap}>
-              <JiraBellIcon size={20} color={focused ? '#FFFFFF' : '#8C9BAB'} />
+          tabBarIcon: ({ focused }) => (
+            <View
+              style={[
+                focused ? styles.activePill : styles.inactiveWrap,
+                focused && { backgroundColor: isDark ? '#1D3B6A' : '#DEEBFF' },
+              ]}
+            >
+              <JiraBellIcon
+                size={20}
+                color={focused ? (isDark ? '#FFFFFF' : '#0052CC') : colors.subText}
+              />
             </View>
           ),
         }}
@@ -128,7 +171,6 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   activePill: {
-    backgroundColor: '#1D3B6A',
     width: 52,
     height: 30,
     borderRadius: 15,

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,10 @@ import {
   Dimensions,
   PanResponder,
   Animated,
-  Modal,
 } from 'react-native';
-import { ListTodo, Clock, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react-native';
+import { ListTodo, Clock, CheckCircle2, ArrowRight } from 'lucide-react-native';
 import { Task, TaskStatus } from '../types';
+import { useThemeStore, ThemeColors } from '../stores/useThemeStore';
 
 interface KanbanBoardProps {
   tasks: Task[];
@@ -35,7 +35,7 @@ const COLUMNS: {
     sub: 'To Do',
     icon: ListTodo,
     color: '#8C9BAB',
-    bgLight: 'rgba(140, 155, 171, 0.1)',
+    bgLight: 'rgba(140, 155, 171, 0.12)',
   },
   {
     key: 'IN_PROGRESS',
@@ -43,7 +43,7 @@ const COLUMNS: {
     sub: 'In Progress',
     icon: Clock,
     color: '#579DFF',
-    bgLight: 'rgba(87, 157, 255, 0.12)',
+    bgLight: 'rgba(87, 157, 255, 0.15)',
   },
   {
     key: 'DONE',
@@ -51,7 +51,7 @@ const COLUMNS: {
     sub: 'Done',
     icon: CheckCircle2,
     color: '#57D9A3',
-    bgLight: 'rgba(87, 217, 163, 0.12)',
+    bgLight: 'rgba(87, 217, 163, 0.15)',
   },
 ];
 
@@ -59,6 +59,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   tasks,
   onUpdateStatus,
 }) => {
+  const { colors, isDark } = useThemeStore();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [draggingTask, setDraggingTask] = useState<Task | null>(null);
   const [hoveredStatus, setHoveredStatus] = useState<TaskStatus | null>(null);
 
@@ -233,7 +236,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                 ? '→ Đã xong'
                                 : '→ Cần làm'}
                             </Text>
-                            <ArrowRight size={11} color="#8C9BAB" />
+                            <ArrowRight size={11} color={colors.subText} />
                           </View>
                         </View>
                       </TouchableOpacity>
@@ -320,196 +323,197 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  boardContainer: {
-    flex: 1,
-  },
-  columnsScrollContent: {
-    gap: 12,
-    paddingRight: 16,
-  },
-  column: {
-    width: 250,
-    backgroundColor: '#161A1D',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#22272B',
-    maxHeight: 520,
-    overflow: 'hidden',
-  },
-  columnHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderTopWidth: 3,
-    borderBottomWidth: 1,
-    borderBottomColor: '#22272B',
-    backgroundColor: '#1C2127',
-  },
-  columnTitleWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  columnTitle: {
-    color: '#E6EDF3',
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  countBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  countBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  tasksScroll: {
-    padding: 10,
-  },
-  emptyColumn: {
-    paddingVertical: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyColumnText: {
-    color: '#626F86',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  taskCard: {
-    backgroundColor: '#1C2127',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#282E33',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  taskCardHidden: {
-    opacity: 0.25,
-    borderStyle: 'dashed',
-  },
-  cardTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  taskKey: {
-    color: '#8C9BAB',
-    fontSize: 10,
-    fontWeight: '700',
-    fontFamily: 'monospace',
-  },
-  priorityBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  priorityText: {
-    fontSize: 9,
-    fontWeight: '800',
-  },
-  taskTitle: {
-    color: '#E6EDF3',
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 18,
-    marginBottom: 8,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: '#22272B',
-    paddingTop: 6,
-    marginTop: 2,
-  },
-  dragHintText: {
-    color: '#626F86',
-    fontSize: 10,
-  },
-  statusNextRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  tapToCycleText: {
-    color: '#8C9BAB',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  dragOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 9999,
-  },
-  dropZoneBar: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    right: 10,
-    flexDirection: 'row',
-    gap: 8,
-    backgroundColor: '#101214',
-    padding: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#282E33',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-    elevation: 8,
-  },
-  dropZoneTarget: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#1C2127',
-    borderWidth: 1.5,
-    borderColor: '#282E33',
-  },
-  dropZoneTargetText: {
-    color: '#8C9BAB',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  floatingCard: {
-    position: 'absolute',
-    width: 220,
-    backgroundColor: '#1C2127',
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 2,
-    borderColor: '#579DFF',
-    shadowColor: '#579DFF',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 12,
-  },
-  floatingTargetStatus: {
-    color: '#579DFF',
-    fontSize: 11,
-    fontWeight: '700',
-    marginTop: 4,
-  },
-});
+const getStyles = (colors: ThemeColors, isDark: boolean) =>
+  StyleSheet.create({
+    boardContainer: {
+      flex: 1,
+    },
+    columnsScrollContent: {
+      gap: 12,
+      paddingRight: 16,
+    },
+    column: {
+      width: 250,
+      backgroundColor: isDark ? '#161A1D' : '#F4F5F7',
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      maxHeight: 520,
+      overflow: 'hidden',
+    },
+    columnHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      borderTopWidth: 3,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.cardBorder,
+      backgroundColor: colors.cardBg,
+    },
+    columnTitleWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    columnTitle: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '800',
+      letterSpacing: 0.5,
+    },
+    countBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 10,
+    },
+    countBadgeText: {
+      fontSize: 11,
+      fontWeight: '800',
+    },
+    tasksScroll: {
+      padding: 10,
+    },
+    emptyColumn: {
+      paddingVertical: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyColumnText: {
+      color: colors.mutedText,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    taskCard: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: isDark ? 0.3 : 0.05,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    taskCardHidden: {
+      opacity: 0.25,
+      borderStyle: 'dashed',
+    },
+    cardTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 6,
+    },
+    taskKey: {
+      color: colors.mutedText,
+      fontSize: 10,
+      fontWeight: '700',
+      fontFamily: 'monospace',
+    },
+    priorityBadge: {
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    priorityText: {
+      fontSize: 9,
+      fontWeight: '800',
+    },
+    taskTitle: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '600',
+      lineHeight: 18,
+      marginBottom: 8,
+    },
+    cardFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+      paddingTop: 6,
+      marginTop: 2,
+    },
+    dragHintText: {
+      color: colors.mutedText,
+      fontSize: 10,
+    },
+    statusNextRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+    },
+    tapToCycleText: {
+      color: colors.subText,
+      fontSize: 10,
+      fontWeight: '600',
+    },
+    dragOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 9999,
+    },
+    dropZoneBar: {
+      position: 'absolute',
+      top: 10,
+      left: 10,
+      right: 10,
+      flexDirection: 'row',
+      gap: 8,
+      backgroundColor: colors.headerBg,
+      padding: 8,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isDark ? 0.5 : 0.15,
+      shadowRadius: 6,
+      elevation: 8,
+    },
+    dropZoneTarget: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 8,
+      borderRadius: 8,
+      backgroundColor: colors.cardBg,
+      borderWidth: 1.5,
+      borderColor: colors.cardBorder,
+    },
+    dropZoneTargetText: {
+      color: colors.subText,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    floatingCard: {
+      position: 'absolute',
+      width: 220,
+      backgroundColor: colors.cardBg,
+      borderRadius: 14,
+      padding: 12,
+      borderWidth: 2,
+      borderColor: colors.primary,
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.4,
+      shadowRadius: 10,
+      elevation: 12,
+    },
+    floatingTargetStatus: {
+      color: colors.primary,
+      fontSize: 11,
+      fontWeight: '700',
+      marginTop: 4,
+    },
+  });

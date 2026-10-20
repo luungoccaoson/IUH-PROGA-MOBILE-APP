@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { X } from 'lucide-react-native';
 import { Workspace } from '../types';
+import { useThemeStore } from '../stores/useThemeStore';
 
 interface WorkspaceModalProps {
   visible: boolean;
@@ -16,6 +17,7 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   onSubmit,
   workspaceToEdit,
 }) => {
+  const { colors, isDark } = useThemeStore();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -51,40 +53,55 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
+        <View style={[styles.modalCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
           <View style={styles.header}>
-            <Text style={styles.modalTitle}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
               {workspaceToEdit ? 'Chỉnh sửa Workspace' : 'Tạo Workspace Mới'}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <X size={20} color="#6B7280" />
+              <X size={20} color={colors.subText} />
             </TouchableOpacity>
           </View>
 
           {!!error && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View style={[styles.errorBox, { backgroundColor: colors.dangerBg, borderColor: colors.dangerText }]}>
+              <Text style={[styles.errorText, { color: colors.dangerText }]}>{error}</Text>
             </View>
           )}
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>TÊN WORKSPACE</Text>
+            <Text style={[styles.label, { color: colors.subText }]}>TÊN WORKSPACE</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.inputBg,
+                  borderColor: colors.inputBorder,
+                  color: colors.text,
+                },
+              ]}
               placeholder="Ví dụ: Dự án tốt nghiệp"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.mutedText}
               value={name}
               onChangeText={setName}
             />
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>MÔ TẢ CHI TIẾT</Text>
+            <Text style={[styles.label, { color: colors.subText }]}>MÔ TẢ CHI TIẾT</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[
+                styles.input,
+                styles.textArea,
+                {
+                  backgroundColor: colors.inputBg,
+                  borderColor: colors.inputBorder,
+                  color: colors.text,
+                },
+              ]}
               placeholder="Ví dụ: KLTN hệ thống tích hợp AI agents..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.mutedText}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
@@ -94,11 +111,25 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
           </View>
 
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={onClose} disabled={loading}>
-              <Text style={styles.cancelText}>HỦY</Text>
+            <TouchableOpacity
+              style={[
+                styles.cancelBtn,
+                {
+                  backgroundColor: colors.cardInner,
+                  borderColor: colors.cardBorder,
+                },
+              ]}
+              onPress={onClose}
+              disabled={loading}
+            >
+              <Text style={[styles.cancelText, { color: colors.subText }]}>HỦY</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={loading}>
+            <TouchableOpacity
+              style={[styles.submitBtn, { backgroundColor: colors.primary }]}
+              onPress={handleSubmit}
+              disabled={loading}
+            >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (

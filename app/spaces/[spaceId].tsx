@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -33,6 +33,7 @@ import {
   Mail,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useThemeStore, ThemeColors } from '../../stores/useThemeStore';
 import { workspaceService } from '../../services/workspace.service';
 import { userService } from '../../services/user.service';
 import { Space, Task, TaskStatus, Workspace } from '../../types';
@@ -41,6 +42,7 @@ import { SpaceModal } from '../../components/SpaceModal';
 import { AddSpaceMemberModal } from '../../components/AddSpaceMemberModal';
 import { KanbanBoard } from '../../components/KanbanBoard';
 import { recentSpacesService } from '../../services/recentSpaces.service';
+import { getProgressColor } from '../../utils/progress';
 
 type SubTabType = 'overview' | 'tasks' | 'kanban' | 'members';
 
@@ -62,6 +64,8 @@ export interface SpaceMemberDetail {
 export default function SpaceDetailScreen() {
   const { spaceId } = useLocalSearchParams();
   const router = useRouter();
+  const { colors, isDark } = useThemeStore();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
   const { user } = useAuthStore();
   const idNum = parseInt(spaceId as string, 10);
 
@@ -293,6 +297,7 @@ export default function SpaceDetailScreen() {
   const inProgressTasks = tasks.filter((t) => t.status === 'IN_PROGRESS').length;
   const todoTasks = tasks.filter((t) => t.status === 'TODO').length;
   const percentComplete = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+  const progressColor = getProgressColor(percentComplete);
 
   const filteredTasks = tasks.filter((t) => {
     if (statusFilter === 'ALL') return true;
@@ -302,9 +307,9 @@ export default function SpaceDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="light-content" backgroundColor="#101214" />
+        <StatusBar barStyle={colors.statusBar} backgroundColor={colors.headerBg} />
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#579DFF" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Đang tải chi tiết Không gian...</Text>
         </View>
       </SafeAreaView>
@@ -313,7 +318,7 @@ export default function SpaceDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#101214" />
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.headerBg} />
       <View style={styles.container}>
         {/* Header Bar */}
         <View style={styles.headerBar}>
@@ -322,7 +327,7 @@ export default function SpaceDetailScreen() {
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <ArrowLeft size={22} color="#E6EDF3" />
+            <ArrowLeft size={22} color={colors.text} />
           </TouchableOpacity>
 
           <View style={styles.headerTitleWrap}>
@@ -341,7 +346,7 @@ export default function SpaceDetailScreen() {
             onPress={() => setEditSpaceVisible(true)}
             activeOpacity={0.7}
           >
-            <Settings size={20} color="#8C9BAB" />
+            <Settings size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -468,12 +473,17 @@ export default function SpaceDetailScreen() {
               <View style={styles.cardBox}>
                 <View style={styles.progressHeader}>
                   <Text style={styles.cardBoxTitle}>TIẾN ĐỘ HOÀN THÀNH</Text>
-                  <Text style={styles.progressPercentText}>{percentComplete}%</Text>
+                  <Text style={[styles.progressPercentText, { color: progressColor.main }]}>
+                    {percentComplete}%
+                  </Text>
                 </View>
 
                 <View style={styles.progressBarTrack}>
                   <View
-                    style={[styles.progressBarFill, { width: `${percentComplete}%` }]}
+                    style={[
+                      styles.progressBarFill,
+                      { width: `${percentComplete}%`, backgroundColor: progressColor.main },
+                    ]}
                   />
                 </View>
 
@@ -784,496 +794,497 @@ export default function SpaceDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#101214',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#101214',
-  },
-  centerContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  loadingText: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    marginTop: 12,
-  },
-  headerBar: {
-    height: 60,
-    backgroundColor: '#101214',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#22272B',
-  },
-  backBtn: {
-    padding: 6,
-    marginRight: 8,
-  },
-  headerTitleWrap: {
-    flex: 1,
-  },
-  headerTitle: {
-    color: '#E6EDF3',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  headerSub: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    marginTop: 1,
-  },
-  settingsBtn: {
-    padding: 6,
-  },
-  subTabBarWrapper: {
-    backgroundColor: '#161A1D',
-    borderBottomWidth: 1,
-    borderBottomColor: '#22272B',
-  },
-  subTabBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-  },
-  subTabItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    gap: 6,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  subTabActive: {
-    borderBottomColor: '#579DFF',
-    backgroundColor: 'rgba(87, 157, 255, 0.08)',
-  },
-  subTabText: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  subTabTextActive: {
-    color: '#579DFF',
-    fontWeight: '700',
-  },
-  tabBadge: {
-    backgroundColor: '#22272B',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 8,
-    marginLeft: 2,
-  },
-  tabBadgeActive: {
-    backgroundColor: '#1D3B6A',
-  },
-  tabBadgeText: {
-    color: '#8C9BAB',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  tabBadgeTextActive: {
-    color: '#579DFF',
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
-  kanbanTabContainer: {
-    flex: 1,
-    paddingTop: 12,
-    paddingHorizontal: 12,
-  },
-  tabSection: {
-    gap: 16,
-  },
-  cardBox: {
-    backgroundColor: '#1C2127',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#22272B',
-  },
-  cardBoxTitle: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  progressPercentText: {
-    color: '#57D9A3',
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  progressBarTrack: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#161A1D',
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#57D9A3',
-    borderRadius: 4,
-  },
-  progressSubText: {
-    color: '#8C9BAB',
-    fontSize: 12,
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  metricCard: {
-    flex: 1,
-    backgroundColor: '#1C2127',
-    borderRadius: 12,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#22272B',
-  },
-  metricLabel: {
-    color: '#8C9BAB',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  metricValue: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#E6EDF3',
-    marginVertical: 4,
-  },
-  metricSub: {
-    color: '#6B7280',
-    fontSize: 11,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 6,
-  },
-  infoLabel: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    fontWeight: '600',
-    width: 100,
-  },
-  infoValue: {
-    color: '#E6EDF3',
-    fontSize: 13,
-    flex: 1,
-  },
-  primaryActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#1D3B6A',
-    borderRadius: 12,
-    paddingVertical: 12,
-    marginTop: 6,
-  },
-  primaryActionBtnText: {
-    color: '#579DFF',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  filterScroll: {
-    gap: 8,
-    paddingBottom: 12,
-  },
-  filterPill: {
-    backgroundColor: '#1C2127',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#282E33',
-  },
-  filterPillActive: {
-    backgroundColor: '#1D3B6A',
-    borderColor: '#579DFF',
-  },
-  filterPillText: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  filterPillTextActive: {
-    color: '#579DFF',
-    fontWeight: '700',
-  },
-  emptyCardBox: {
-    backgroundColor: '#1C2127',
-    borderRadius: 16,
-    padding: 30,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#22272B',
-  },
-  emptyCardTitle: {
-    color: '#E6EDF3',
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  emptyCardSub: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 16,
-  },
-  emptyCreateBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1D3B6A',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  emptyCreateBtnText: {
-    color: '#579DFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  taskCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1C2127',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#22272B',
-  },
-  taskCardTitle: {
-    color: '#E6EDF3',
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 19,
-  },
-  strikeThrough: {
-    textDecorationLine: 'line-through',
-    color: '#8C9BAB',
-  },
-  taskCardSub: {
-    color: '#8C9BAB',
-    fontSize: 11,
-    marginTop: 4,
-  },
-  kanbanScroll: {
-    gap: 12,
-    paddingBottom: 20,
-  },
-  kanbanColumn: {
-    width: 240,
-    backgroundColor: '#161A1D',
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#22272B',
-  },
-  kanbanColHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  kanbanColTitle: {
-    color: '#E6EDF3',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  colBadge: {
-    backgroundColor: '#282E33',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  colBadgeText: {
-    color: '#8C9BAB',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  colEmpty: {
-    paddingVertical: 30,
-    alignItems: 'center',
-  },
-  colEmptyText: {
-    color: '#8C9BAB',
-    fontSize: 12,
-  },
-  kanbanCard: {
-    backgroundColor: '#1C2127',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#282E33',
-  },
-  kanbanCardTitle: {
-    color: '#E6EDF3',
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 18,
-  },
-  kanbanCardSub: {
-    color: '#8C9BAB',
-    fontSize: 11,
-    marginTop: 4,
-  },
-  memberHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  addMemberBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1D3B6A',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    gap: 4,
-  },
-  addMemberBtnText: {
-    color: '#579DFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  emptyMembersWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 30,
-  },
-  memberRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#22272B',
-  },
-  memberAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1D3B6A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  memberAvatarImg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: '#282E33',
-  },
-  ownerAvatar: {
-    backgroundColor: '#382800',
-    borderWidth: 1,
-    borderColor: '#FFAB00',
-  },
-  ownerAvatarText: {
-    color: '#FFAB00',
-  },
-  memberAvatarText: {
-    color: '#579DFF',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  memberNameLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  memberName: {
-    color: '#E6EDF3',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  memberEmail: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  memberStatsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  statDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#57D9A3',
-    marginRight: 6,
-  },
-  memberStatsText: {
-    color: '#626F86',
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  ownerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#2A1F00',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#7F5F01',
-  },
-  ownerBadgeText: {
-    color: '#FFAB00',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  pmBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#092147',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#1D3B6A',
-  },
-  pmBadgeText: {
-    color: '#579DFF',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  memberBadge: {
-    backgroundColor: '#22272B',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  memberBadgeText: {
-    color: '#8C9BAB',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-});
+const getStyles = (colors: ThemeColors, isDark: boolean) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    centerContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20,
+    },
+    loadingText: {
+      color: colors.subText,
+      fontSize: 13,
+      marginTop: 12,
+    },
+    headerBar: {
+      height: 60,
+      backgroundColor: colors.headerBg,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.headerBorder,
+    },
+    backBtn: {
+      padding: 6,
+      marginRight: 8,
+    },
+    headerTitleWrap: {
+      flex: 1,
+    },
+    headerTitle: {
+      color: colors.text,
+      fontSize: 17,
+      fontWeight: '700',
+    },
+    headerSub: {
+      color: colors.subText,
+      fontSize: 12,
+      marginTop: 1,
+    },
+    settingsBtn: {
+      padding: 6,
+    },
+    subTabBarWrapper: {
+      backgroundColor: colors.cardInner,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    subTabBarContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 8,
+    },
+    subTabItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      gap: 6,
+      borderBottomWidth: 2,
+      borderBottomColor: 'transparent',
+    },
+    subTabActive: {
+      borderBottomColor: colors.primary,
+      backgroundColor: isDark ? 'rgba(87, 157, 255, 0.08)' : 'rgba(0, 82, 204, 0.08)',
+    },
+    subTabText: {
+      color: colors.subText,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    subTabTextActive: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    tabBadge: {
+      backgroundColor: colors.segmentBg,
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+      borderRadius: 8,
+      marginLeft: 2,
+    },
+    tabBadgeActive: {
+      backgroundColor: colors.primaryBg,
+    },
+    tabBadgeText: {
+      color: colors.subText,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    tabBadgeTextActive: {
+      color: colors.primary,
+    },
+    content: {
+      flex: 1,
+      padding: 16,
+    },
+    kanbanTabContainer: {
+      flex: 1,
+      paddingTop: 12,
+      paddingHorizontal: 12,
+    },
+    tabSection: {
+      gap: 16,
+    },
+    cardBox: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 16,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    cardBoxTitle: {
+      color: colors.subText,
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+      marginBottom: 12,
+    },
+    progressHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    progressPercentText: {
+      color: '#57D9A3',
+      fontSize: 16,
+      fontWeight: '800',
+    },
+    progressBarTrack: {
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.cardInner,
+      overflow: 'hidden',
+      marginBottom: 8,
+    },
+    progressBarFill: {
+      height: '100%',
+      backgroundColor: '#57D9A3',
+      borderRadius: 4,
+    },
+    progressSubText: {
+      color: colors.subText,
+      fontSize: 12,
+    },
+    metricsGrid: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    metricCard: {
+      flex: 1,
+      backgroundColor: colors.cardBg,
+      borderRadius: 12,
+      padding: 10,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    metricLabel: {
+      color: colors.subText,
+      fontSize: 10,
+      fontWeight: '800',
+      letterSpacing: 0.5,
+    },
+    metricValue: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: colors.text,
+      marginVertical: 4,
+    },
+    metricSub: {
+      color: colors.mutedText,
+      fontSize: 11,
+    },
+    infoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: 6,
+    },
+    infoLabel: {
+      color: colors.subText,
+      fontSize: 13,
+      fontWeight: '600',
+      width: 100,
+    },
+    infoValue: {
+      color: colors.text,
+      fontSize: 13,
+      flex: 1,
+    },
+    primaryActionBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.primaryBg,
+      borderRadius: 12,
+      paddingVertical: 12,
+      marginTop: 6,
+    },
+    primaryActionBtnText: {
+      color: colors.primary,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    filterScroll: {
+      gap: 8,
+      paddingBottom: 12,
+    },
+    filterPill: {
+      backgroundColor: colors.cardBg,
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    filterPillActive: {
+      backgroundColor: colors.primaryBg,
+      borderColor: colors.primary,
+    },
+    filterPillText: {
+      color: colors.subText,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    filterPillTextActive: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    emptyCardBox: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 16,
+      padding: 30,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    emptyCardTitle: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '700',
+      marginBottom: 6,
+    },
+    emptyCardSub: {
+      color: colors.subText,
+      fontSize: 12,
+      textAlign: 'center',
+      lineHeight: 18,
+      marginBottom: 16,
+    },
+    emptyCreateBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.primaryBg,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 10,
+    },
+    emptyCreateBtnText: {
+      color: colors.primary,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    taskCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardBg,
+      borderRadius: 14,
+      padding: 14,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    taskCardTitle: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '600',
+      lineHeight: 19,
+    },
+    strikeThrough: {
+      textDecorationLine: 'line-through',
+      color: colors.mutedText,
+    },
+    taskCardSub: {
+      color: colors.subText,
+      fontSize: 11,
+      marginTop: 4,
+    },
+    kanbanScroll: {
+      gap: 12,
+      paddingBottom: 20,
+    },
+    kanbanColumn: {
+      width: 240,
+      backgroundColor: colors.cardInner,
+      borderRadius: 16,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    kanbanColHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 10,
+    },
+    kanbanColTitle: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    colBadge: {
+      backgroundColor: colors.segmentBg,
+      borderRadius: 10,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+    },
+    colBadgeText: {
+      color: colors.subText,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    colEmpty: {
+      paddingVertical: 30,
+      alignItems: 'center',
+    },
+    colEmptyText: {
+      color: colors.subText,
+      fontSize: 12,
+    },
+    kanbanCard: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    kanbanCardTitle: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '600',
+      lineHeight: 18,
+    },
+    kanbanCardSub: {
+      color: colors.subText,
+      fontSize: 11,
+      marginTop: 4,
+    },
+    memberHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    addMemberBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.primaryBg,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 8,
+      gap: 4,
+    },
+    addMemberBtnText: {
+      color: colors.primary,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    emptyMembersWrap: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 30,
+    },
+    memberRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    memberAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.primaryBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    memberAvatarImg: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      marginRight: 12,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    ownerAvatar: {
+      backgroundColor: isDark ? '#382800' : '#FFF0B3',
+      borderWidth: 1,
+      borderColor: '#FFAB00',
+    },
+    ownerAvatarText: {
+      color: isDark ? '#FFAB00' : '#B76E00',
+    },
+    memberAvatarText: {
+      color: colors.primary,
+      fontWeight: '700',
+      fontSize: 14,
+    },
+    memberNameLine: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      flexWrap: 'wrap',
+    },
+    memberName: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    memberEmail: {
+      color: colors.subText,
+      fontSize: 12,
+      marginTop: 2,
+    },
+    memberStatsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    statDot: {
+      width: 5,
+      height: 5,
+      borderRadius: 2.5,
+      backgroundColor: '#57D9A3',
+      marginRight: 6,
+    },
+    memberStatsText: {
+      color: colors.mutedText,
+      fontSize: 11,
+      fontWeight: '500',
+    },
+    ownerBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDark ? '#2A1F00' : '#FFF0B3',
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: isDark ? '#7F5F01' : '#F5CD47',
+    },
+    ownerBadgeText: {
+      color: isDark ? '#FFAB00' : '#B76E00',
+      fontSize: 10,
+      fontWeight: '800',
+    },
+    pmBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDark ? '#092147' : '#DEEBFF',
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: isDark ? '#1D3B6A' : '#B3D4FF',
+    },
+    pmBadgeText: {
+      color: isDark ? '#579DFF' : '#0052CC',
+      fontSize: 10,
+      fontWeight: '800',
+    },
+    memberBadge: {
+      backgroundColor: colors.segmentBg,
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      borderRadius: 6,
+    },
+    memberBadgeText: {
+      color: colors.subText,
+      fontSize: 10,
+      fontWeight: '700',
+    },
+  });

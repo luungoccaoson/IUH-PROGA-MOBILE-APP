@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import {
   Rocket,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useThemeStore, ThemeColors } from '../../stores/useThemeStore';
 import { workspaceService } from '../../services/workspace.service';
 import { recentSpacesService } from '../../services/recentSpaces.service';
 import { Workspace, Space, ClassifiedWorkspaces, Task } from '../../types';
@@ -42,6 +43,8 @@ interface UserTaskItem {
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { colors, isDark } = useThemeStore();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [activeTab, setActiveTab] = useState<'all' | 'owned' | 'joined'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -160,17 +163,29 @@ export default function HomeScreen() {
   const getStatusBadge = (status?: string) => {
     switch (status) {
       case 'DONE':
-        return { label: 'Hoàn thành', bg: '#0D3823', text: '#36B37E' };
+        return {
+          label: 'Hoàn thành',
+          bg: isDark ? '#0D3823' : '#E3FCEF',
+          text: isDark ? '#36B37E' : '#006644',
+        };
       case 'IN_PROGRESS':
-        return { label: 'Đang làm', bg: '#43290F', text: '#F59E0B' };
+        return {
+          label: 'Đang làm',
+          bg: isDark ? '#43290F' : '#FFF0B3',
+          text: isDark ? '#F59E0B' : '#B76E00',
+        };
       default:
-        return { label: 'Cần làm', bg: '#1D3B6A', text: '#579DFF' };
+        return {
+          label: 'Cần làm',
+          bg: isDark ? '#1D3B6A' : '#DEEBFF',
+          text: isDark ? '#579DFF' : '#0052CC',
+        };
     }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#101214" />
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.headerBg} />
       <View style={styles.container}>
         {/* Jira Header (Top middle component removed as requested) */}
         <JiraHeader
@@ -180,7 +195,7 @@ export default function HomeScreen() {
               onPress={() => setCreateWsModalVisible(true)}
               activeOpacity={0.7}
             >
-              <Plus size={22} color="#E6EDF3" />
+              <Plus size={22} color={colors.text} />
             </TouchableOpacity>
           }
         />
@@ -192,18 +207,18 @@ export default function HomeScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#579DFF"
-              colors={['#579DFF']}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
         >
           {/* Search Bar */}
           <View style={styles.searchContainer}>
-            <Search size={18} color="#8C9BAB" style={styles.searchIcon} />
+            <Search size={18} color={colors.subText} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Tìm kiếm workspace, space, task..."
-              placeholderTextColor="#8C9BAB"
+              placeholderTextColor={colors.subText}
               value={searchQuery}
               onChangeText={setSearchQuery}
               returnKeyType="search"
@@ -214,14 +229,14 @@ export default function HomeScreen() {
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 style={styles.clearSearchBtn}
               >
-                <X size={16} color="#8C9BAB" />
+                <X size={16} color={colors.subText} />
               </TouchableOpacity>
             )}
           </View>
 
           {loading ? (
             <View style={styles.centerContainer}>
-              <ActivityIndicator size="small" color="#579DFF" />
+              <ActivityIndicator size="small" color={colors.primary} />
               <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
             </View>
           ) : isSearching ? (
@@ -617,339 +632,340 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#101214',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#101214',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  headerIconButton: {
-    padding: 4,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1C2127',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#282E33',
-    paddingHorizontal: 16,
-    height: 44,
-    marginTop: 14,
-    marginBottom: 14,
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    color: '#E6EDF3',
-    fontSize: 14,
-  },
-  clearSearchBtn: {
-    padding: 4,
-    marginLeft: 6,
-  },
-  searchResultsContainer: {
-    gap: 16,
-    paddingBottom: 20,
-  },
-  searchHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  searchResultsTitle: {
-    color: '#E6EDF3',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  matchCountBadge: {
-    backgroundColor: '#1D3B6A',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  matchCountText: {
-    color: '#579DFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  searchGroup: {
-    gap: 8,
-  },
-  searchGroupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  searchGroupTitle: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  searchCardGroup: {
-    backgroundColor: '#1C2127',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#282E33',
-    overflow: 'hidden',
-  },
-  searchItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-  },
-  groupDivider: {
-    height: 1,
-    backgroundColor: '#282E33',
-    marginLeft: 58,
-  },
-  itemIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  itemInfoWrap: {
-    flex: 1,
-    marginRight: 8,
-  },
-  itemNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 6,
-    marginBottom: 2,
-  },
-  itemName: {
-    color: '#E6EDF3',
-    fontSize: 14,
-    fontWeight: '600',
-    flex: 1,
-  },
-  itemDesc: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  itemBreadcrumb: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  taskStatusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  taskStatusText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  spacesSection: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  quickAccessScroll: {
-    gap: 12,
-  },
-  quickCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1C2127',
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#282E33',
-    minWidth: 150,
-    gap: 10,
-  },
-  quickCardIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickCardTextWrap: {
-    flex: 1,
-  },
-  quickCardTitle: {
-    color: '#E6EDF3',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  quickCardSub: {
-    color: '#8C9BAB',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  segmentContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#161A1D',
-    borderRadius: 20,
-    padding: 3,
-    marginBottom: 16,
-    alignSelf: 'flex-start',
-  },
-  segmentButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 17,
-  },
-  segmentButtonActive: {
-    backgroundColor: '#1D3B6A',
-  },
-  segmentText: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  segmentTextActive: {
-    color: '#579DFF',
-    fontWeight: '700',
-  },
-  workspacesList: {
-    gap: 10,
-  },
-  workspaceCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1C2127',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#22272B',
-  },
-  wsIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  wsInfo: {
-    flex: 1,
-    marginRight: 8,
-  },
-  wsHeaderLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  wsName: {
-    color: '#E6EDF3',
-    fontSize: 15,
-    fontWeight: '700',
-    flex: 1,
-    marginRight: 6,
-  },
-  roleBadgeOwned: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1D3B6A',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  roleTextOwned: {
-    color: '#579DFF',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  roleBadgeJoined: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0D3823',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  roleTextJoined: {
-    color: '#57D9A3',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  wsDesc: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  wsDate: {
-    color: '#6B7280',
-    fontSize: 10,
-    marginTop: 4,
-  },
-  centerContainer: {
-    padding: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    marginTop: 10,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-  emptyIconCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: '#161A1D',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    color: '#E6EDF3',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 20,
-  },
-  emptyActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1D3B6A',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    gap: 8,
-  },
-  emptyActionBtnText: {
-    color: '#579DFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-});
+const getStyles = (colors: ThemeColors, isDark: boolean) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 16,
+    },
+    headerIconButton: {
+      padding: 4,
+    },
+    searchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardBg,
+      borderRadius: 24,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      paddingHorizontal: 16,
+      height: 44,
+      marginTop: 14,
+      marginBottom: 14,
+    },
+    searchIcon: {
+      marginRight: 10,
+    },
+    searchInput: {
+      flex: 1,
+      color: colors.text,
+      fontSize: 14,
+    },
+    clearSearchBtn: {
+      padding: 4,
+      marginLeft: 6,
+    },
+    searchResultsContainer: {
+      gap: 16,
+      paddingBottom: 20,
+    },
+    searchHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    searchResultsTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    matchCountBadge: {
+      backgroundColor: colors.primaryBg,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    matchCountText: {
+      color: colors.primary,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    searchGroup: {
+      gap: 8,
+    },
+    searchGroupHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    searchGroupTitle: {
+      color: colors.subText,
+      fontSize: 13,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    searchCardGroup: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      overflow: 'hidden',
+    },
+    searchItemRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+    },
+    groupDivider: {
+      height: 1,
+      backgroundColor: colors.divider,
+      marginLeft: 58,
+    },
+    itemIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    itemInfoWrap: {
+      flex: 1,
+      marginRight: 8,
+    },
+    itemNameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 6,
+      marginBottom: 2,
+    },
+    itemName: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '600',
+      flex: 1,
+    },
+    itemDesc: {
+      color: colors.subText,
+      fontSize: 12,
+      marginTop: 2,
+    },
+    itemBreadcrumb: {
+      color: colors.subText,
+      fontSize: 12,
+      marginTop: 2,
+    },
+    taskStatusBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 8,
+    },
+    taskStatusText: {
+      fontSize: 10,
+      fontWeight: '700',
+    },
+    spacesSection: {
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      color: colors.subText,
+      fontSize: 13,
+      fontWeight: '700',
+      marginBottom: 8,
+    },
+    quickAccessScroll: {
+      gap: 12,
+    },
+    quickCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardBg,
+      borderRadius: 14,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      minWidth: 150,
+      gap: 10,
+    },
+    quickCardIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    quickCardTextWrap: {
+      flex: 1,
+    },
+    quickCardTitle: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    quickCardSub: {
+      color: colors.subText,
+      fontSize: 11,
+      marginTop: 2,
+    },
+    segmentContainer: {
+      flexDirection: 'row',
+      backgroundColor: colors.segmentBg,
+      borderRadius: 20,
+      padding: 3,
+      marginBottom: 16,
+      alignSelf: 'flex-start',
+    },
+    segmentButton: {
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      borderRadius: 17,
+    },
+    segmentButtonActive: {
+      backgroundColor: colors.segmentActiveBg,
+    },
+    segmentText: {
+      color: colors.subText,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    segmentTextActive: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    workspacesList: {
+      gap: 10,
+    },
+    workspaceCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardBg,
+      borderRadius: 16,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    wsIconWrap: {
+      width: 42,
+      height: 42,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    wsInfo: {
+      flex: 1,
+      marginRight: 8,
+    },
+    wsHeaderLine: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    wsName: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '700',
+      flex: 1,
+      marginRight: 6,
+    },
+    roleBadgeOwned: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDark ? '#1D3B6A' : '#DEEBFF',
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 8,
+    },
+    roleTextOwned: {
+      color: isDark ? '#579DFF' : '#0052CC',
+      fontSize: 10,
+      fontWeight: '700',
+    },
+    roleBadgeJoined: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDark ? '#0D3823' : '#E3FCEF',
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 8,
+    },
+    roleTextJoined: {
+      color: isDark ? '#57D9A3' : '#006644',
+      fontSize: 10,
+      fontWeight: '700',
+    },
+    wsDesc: {
+      color: colors.subText,
+      fontSize: 12,
+      lineHeight: 16,
+    },
+    wsDate: {
+      color: colors.mutedText,
+      fontSize: 10,
+      marginTop: 4,
+    },
+    centerContainer: {
+      padding: 30,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    loadingText: {
+      color: colors.subText,
+      fontSize: 13,
+      marginTop: 10,
+    },
+    emptyContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 40,
+      paddingHorizontal: 20,
+    },
+    emptyIconCircle: {
+      width: 68,
+      height: 68,
+      borderRadius: 34,
+      backgroundColor: colors.cardInner,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
+    emptyTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+      marginBottom: 8,
+    },
+    emptySubtitle: {
+      color: colors.subText,
+      fontSize: 13,
+      textAlign: 'center',
+      lineHeight: 18,
+      marginBottom: 20,
+    },
+    emptyActionBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.primaryBg,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 12,
+      gap: 8,
+    },
+    emptyActionBtnText: {
+      color: colors.primary,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+  });

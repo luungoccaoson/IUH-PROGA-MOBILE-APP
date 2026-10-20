@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { X, Trash2 } from 'lucide-react-native';
 import { Space } from '../types';
+import { useThemeStore } from '../stores/useThemeStore';
 
 interface SpaceModalProps {
   visible: boolean;
@@ -18,6 +19,7 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
   onDelete,
   spaceToEdit,
 }) => {
+  const { colors, isDark } = useThemeStore();
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -70,29 +72,36 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.modalCard}>
+      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
+        <View style={[styles.modalCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
           <View style={styles.header}>
-            <Text style={styles.modalTitle}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
               {spaceToEdit ? 'Cài đặt Space' : 'Tạo Space Mới'}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <X size={20} color="#6B7280" />
+              <X size={20} color={colors.subText} />
             </TouchableOpacity>
           </View>
 
           {!!error && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View style={[styles.errorBox, { backgroundColor: colors.dangerBg, borderColor: colors.dangerText }]}>
+              <Text style={[styles.errorText, { color: colors.dangerText }]}>{error}</Text>
             </View>
           )}
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>TÊN SPACE</Text>
+            <Text style={[styles.label, { color: colors.subText }]}>TÊN SPACE</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.inputBg,
+                  borderColor: colors.inputBorder,
+                  color: colors.text,
+                },
+              ]}
               placeholder="Ví dụ: Phòng HR"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.mutedText}
               value={name}
               onChangeText={setName}
             />
@@ -100,21 +109,35 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
 
           <View style={styles.row}>
             <View style={[styles.formGroup, { flex: 1 }]}>
-              <Text style={styles.label}>NGÀY BẮT ĐẦU (YYYY-MM-DD)</Text>
+              <Text style={[styles.label, { color: colors.subText }]}>NGÀY BẮT ĐẦU (YYYY-MM-DD)</Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.inputBg,
+                    borderColor: colors.inputBorder,
+                    color: colors.text,
+                  },
+                ]}
                 placeholder="2026-08-01"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.mutedText}
                 value={startDate}
                 onChangeText={setStartDate}
               />
             </View>
             <View style={[styles.formGroup, { flex: 1 }]}>
-              <Text style={styles.label}>NGÀY KẾT THÚC (YYYY-MM-DD)</Text>
+              <Text style={[styles.label, { color: colors.subText }]}>NGÀY KẾT THÚC (YYYY-MM-DD)</Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.inputBg,
+                    borderColor: colors.inputBorder,
+                    color: colors.text,
+                  },
+                ]}
                 placeholder="2026-08-15"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.mutedText}
                 value={endDate}
                 onChangeText={setEndDate}
               />
@@ -122,20 +145,44 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
           </View>
 
           {spaceToEdit && onDelete && (
-            <View style={styles.dangerZone}>
-              <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete} disabled={loading}>
-                <Trash2 size={16} color="#D93025" />
-                <Text style={styles.deleteText}>XÓA SPACE NÀY</Text>
+            <View style={[styles.dangerZone, { borderTopColor: colors.divider }]}>
+              <TouchableOpacity
+                style={[
+                  styles.deleteBtn,
+                  {
+                    backgroundColor: colors.dangerBg,
+                    borderColor: isDark ? '#7F1D1D' : '#FCA5A5',
+                  },
+                ]}
+                onPress={handleDelete}
+                disabled={loading}
+              >
+                <Trash2 size={16} color={colors.dangerText} />
+                <Text style={[styles.deleteText, { color: colors.dangerText }]}>XÓA SPACE NÀY</Text>
               </TouchableOpacity>
             </View>
           )}
 
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={onClose} disabled={loading}>
-              <Text style={styles.cancelText}>HỦY</Text>
+            <TouchableOpacity
+              style={[
+                styles.cancelBtn,
+                {
+                  backgroundColor: colors.cardInner,
+                  borderColor: colors.cardBorder,
+                },
+              ]}
+              onPress={onClose}
+              disabled={loading}
+            >
+              <Text style={[styles.cancelText, { color: colors.subText }]}>HỦY</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={loading}>
+            <TouchableOpacity
+              style={[styles.submitBtn, { backgroundColor: colors.primary }]}
+              onPress={handleSubmit}
+              disabled={loading}
+            >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (

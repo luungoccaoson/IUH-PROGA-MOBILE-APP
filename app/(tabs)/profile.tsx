@@ -25,13 +25,17 @@ import {
   Save,
   RotateCw,
   X,
+  Sun,
+  Moon,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useThemeStore } from '../../stores/useThemeStore';
 import { configService } from '../../services/config';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const { colors, isDark, toggleTheme } = useThemeStore();
 
   const [apiUrl, setApiUrl] = useState('');
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
@@ -85,43 +89,53 @@ export default function ProfileScreen() {
     : 'luungoccaoson0...';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#101214" />
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.bg} />
+      <View style={[styles.container, { backgroundColor: colors.bg }]}>
         {/* Header Bar */}
-        <View style={styles.topNav}>
+        <View
+          style={[
+            styles.topNav,
+            { backgroundColor: colors.headerBg, borderBottomColor: colors.headerBorder },
+          ]}
+        >
           <TouchableOpacity
             style={styles.backBtn}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <ArrowLeft size={22} color="#E6EDF3" />
+            <ArrowLeft size={22} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.topNavTitle}>Tài khoản</Text>
+          <Text style={[styles.topNavTitle, { color: colors.text }]}>Tài khoản</Text>
           <View style={{ width: 36 }} />
         </View>
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-          {/* User Info Card (Khớp ảnh 2) */}
-          <View style={styles.userCard}>
+          {/* User Info Card */}
+          <View
+            style={[
+              styles.userCard,
+              { backgroundColor: colors.cardBg, borderColor: colors.cardBorder },
+            ]}
+          >
             <View style={styles.userCardTopRow}>
               <View style={styles.avatarCircle}>
                 <Text style={styles.avatarText}>{initials}</Text>
               </View>
 
               <View style={styles.userInfoWrap}>
-                <Text style={styles.userName}>{displayName}</Text>
-                <Text style={styles.userEmail}>{displayEmail}</Text>
+                <Text style={[styles.userName, { color: colors.text }]}>{displayName}</Text>
+                <Text style={[styles.userEmail, { color: colors.subText }]}>{displayEmail}</Text>
               </View>
             </View>
 
-            <View style={styles.userCardBottomRow}>
-              <Text style={styles.domainText} numberOfLines={1}>
+            <View style={[styles.userCardBottomRow, { borderTopColor: colors.divider }]}>
+              <Text style={[styles.domainText, { color: colors.subText }]} numberOfLines={1}>
                 {displayDomain}
               </Text>
 
               <View style={styles.addSiteWrap}>
-                <Text style={styles.addSiteLink}>Thêm trang web</Text>
+                <Text style={[styles.addSiteLink, { color: colors.primary }]}>Thêm trang web</Text>
                 <View style={styles.badgeOrange}>
                   <Text style={styles.badgeOrangeText}>7</Text>
                 </View>
@@ -129,86 +143,187 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          {/* Group 1: Settings Card */}
-          <View style={styles.cardGroup}>
-            {/* Cài đặt thông báo (Chưa có tính năng -> không tương tác) */}
-            <View style={styles.groupItemDisabled}>
-              <View style={styles.itemIconWrap}>
-                <Bell size={18} color="#8C9BAB" />
+          {/* Group 1: Settings & Appearance Card */}
+          <View
+            style={[
+              styles.cardGroup,
+              { backgroundColor: colors.cardBg, borderColor: colors.cardBorder },
+            ]}
+          >
+            {/* Tùy chỉnh Sáng / Tối (Thao tác ngay tại đây) */}
+            <TouchableOpacity
+              style={styles.groupItem}
+              onPress={toggleTheme}
+              activeOpacity={0.75}
+            >
+              <View
+                style={[
+                  styles.itemIconWrap,
+                  { backgroundColor: isDark ? '#1D3B6A' : '#DEEBFF' },
+                ]}
+              >
+                {isDark ? (
+                  <Moon size={18} color="#579DFF" />
+                ) : (
+                  <Sun size={18} color="#0052CC" />
+                )}
               </View>
-              <Text style={styles.itemText}>Cài đặt thông báo</Text>
-            </View>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={[styles.itemTextActive, { color: colors.text }]}>
+                  Giao diện: {isDark ? 'Chế độ Tối (Dark)' : 'Chế độ Sáng (Light)'}
+                </Text>
+                <Text style={{ fontSize: 11, color: colors.subText, marginTop: 2 }}>
+                  Nhấn để chuyển sang giao diện {isDark ? 'Sáng' : 'Tối'}
+                </Text>
+              </View>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 14,
+                  backgroundColor: isDark ? '#1D3B6A' : '#DEEBFF',
+                  borderWidth: 1,
+                  borderColor: isDark ? '#282E33' : '#B3D4FF',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: '700',
+                    color: isDark ? '#579DFF' : '#0052CC',
+                  }}
+                >
+                  {isDark ? '🌙 Tối' : '☀️ Sáng'}
+                </Text>
+              </View>
+            </TouchableOpacity>
 
-            <View style={styles.groupDivider} />
+            <View style={[styles.groupDivider, { backgroundColor: colors.divider }]} />
 
-            {/* Cài đặt (ĐÃ CÓ -> tương tác mở cấu hình Server IP Gateway) */}
+            {/* Cài đặt kết nối máy chủ */}
             <TouchableOpacity
               style={styles.groupItem}
               onPress={() => setSettingsModalVisible(true)}
               activeOpacity={0.75}
             >
-              <View style={styles.itemIconWrap}>
-                <Settings size={18} color="#E6EDF3" />
+              <View
+                style={[
+                  styles.itemIconWrap,
+                  { backgroundColor: isDark ? '#161A1D' : '#F4F5F7' },
+                ]}
+              >
+                <Settings size={18} color={colors.text} />
               </View>
-              <Text style={styles.itemTextActive}>Cài đặt kết nối máy chủ</Text>
+              <Text style={[styles.itemTextActive, { color: colors.text }]}>
+                Cài đặt kết nối máy chủ
+              </Text>
             </TouchableOpacity>
+
+            <View style={[styles.groupDivider, { backgroundColor: colors.divider }]} />
+
+            {/* Cài đặt thông báo (Chưa có tính năng -> không tương tác) */}
+            <View style={styles.groupItemDisabled}>
+              <View
+                style={[
+                  styles.itemIconWrap,
+                  { backgroundColor: isDark ? '#161A1D' : '#F4F5F7' },
+                ]}
+              >
+                <Bell size={18} color={colors.subText} />
+              </View>
+              <Text style={[styles.itemText, { color: colors.subText }]}>Cài đặt thông báo</Text>
+            </View>
           </View>
 
           {/* Group 2: Actions Card */}
-          <View style={styles.cardGroup}>
-            {/* Mời mọi người vào trang (Chưa có -> không tương tác) */}
+          <View
+            style={[
+              styles.cardGroup,
+              { backgroundColor: colors.cardBg, borderColor: colors.cardBorder },
+            ]}
+          >
+            {/* Mời mọi người vào trang */}
             <View style={styles.groupItemDisabled}>
-              <View style={styles.itemIconWrap}>
-                <UserPlus size={18} color="#8C9BAB" />
+              <View
+                style={[
+                  styles.itemIconWrap,
+                  { backgroundColor: isDark ? '#161A1D' : '#F4F5F7' },
+                ]}
+              >
+                <UserPlus size={18} color={colors.subText} />
               </View>
-              <Text style={styles.itemText}>Mời mọi người vào trang</Text>
+              <Text style={[styles.itemText, { color: colors.subText }]}>Mời mọi người vào trang</Text>
             </View>
 
-            <View style={styles.groupDivider} />
+            <View style={[styles.groupDivider, { backgroundColor: colors.divider }]} />
 
-            {/* Gửi ý kiến phản hồi (Chưa có -> không tương tác) */}
+            {/* Gửi ý kiến phản hồi */}
             <View style={styles.groupItemDisabled}>
-              <View style={styles.itemIconWrap}>
-                <Mail size={18} color="#8C9BAB" />
+              <View
+                style={[
+                  styles.itemIconWrap,
+                  { backgroundColor: isDark ? '#161A1D' : '#F4F5F7' },
+                ]}
+              >
+                <Mail size={18} color={colors.subText} />
               </View>
-              <Text style={styles.itemText}>Gửi ý kiến phản hồi</Text>
+              <Text style={[styles.itemText, { color: colors.subText }]}>Gửi ý kiến phản hồi</Text>
             </View>
 
-            <View style={styles.groupDivider} />
+            <View style={[styles.groupDivider, { backgroundColor: colors.divider }]} />
 
-            {/* Đánh giá ứng dụng của chúng tôi (Chưa có -> không tương tác) */}
+            {/* Đánh giá ứng dụng */}
             <View style={styles.groupItemDisabled}>
-              <View style={styles.itemIconWrap}>
-                <Star size={18} color="#8C9BAB" />
+              <View
+                style={[
+                  styles.itemIconWrap,
+                  { backgroundColor: isDark ? '#161A1D' : '#F4F5F7' },
+                ]}
+              >
+                <Star size={18} color={colors.subText} />
               </View>
-              <Text style={styles.itemText}>Đánh giá ứng dụng của chúng tôi</Text>
+              <Text style={[styles.itemText, { color: colors.subText }]}>Đánh giá ứng dụng của chúng tôi</Text>
             </View>
 
-            <View style={styles.groupDivider} />
+            <View style={[styles.groupDivider, { backgroundColor: colors.divider }]} />
 
-            {/* Xem thêm ứng dụng Atlassian (Chưa có -> không tương tác) */}
+            {/* Xem thêm ứng dụng Atlassian */}
             <View style={styles.groupItemDisabled}>
-              <View style={styles.itemIconWrap}>
-                <LayoutGrid size={18} color="#8C9BAB" />
+              <View
+                style={[
+                  styles.itemIconWrap,
+                  { backgroundColor: isDark ? '#161A1D' : '#F4F5F7' },
+                ]}
+              >
+                <LayoutGrid size={18} color={colors.subText} />
               </View>
-              <Text style={styles.itemText}>Xem thêm ứng dụng Atlassian</Text>
+              <Text style={[styles.itemText, { color: colors.subText }]}>Xem thêm ứng dụng Atlassian</Text>
             </View>
           </View>
 
-          {/* Group 3: Logout Action (ĐÃ CÓ -> tương tác) */}
+          {/* Group 3: Logout Action */}
           <TouchableOpacity
-            style={styles.logoutBtn}
+            style={[
+              styles.logoutBtn,
+              {
+                backgroundColor: colors.cardBg,
+                borderColor: isDark ? '#3B2225' : '#FEE2E2',
+              },
+            ]}
             onPress={handleLogout}
             activeOpacity={0.75}
           >
-            <LogOut size={18} color="#F87171" style={{ marginRight: 10 }} />
+            <LogOut size={18} color="#EF4444" style={{ marginRight: 10 }} />
             <Text style={styles.logoutBtnText}>Đăng xuất tài khoản</Text>
           </TouchableOpacity>
 
           <View style={{ height: 40 }} />
         </ScrollView>
 
-        {/* Modal: Cài đặt Server IP Gateway (Tính năng đã có hoạt động) */}
+        {/* Modal: Cài đặt Server IP Gateway */}
         <Modal
           visible={settingsModalVisible}
           transparent
@@ -216,21 +331,28 @@ export default function ProfileScreen() {
           onRequestClose={() => setSettingsModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalBox}>
+            <View
+              style={[
+                styles.modalBox,
+                { backgroundColor: colors.cardBg, borderColor: colors.cardBorder },
+              ]}
+            >
               <View style={styles.modalHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Server size={20} color="#579DFF" />
-                  <Text style={styles.modalTitle}>Cài Đặt Backend Gateway</Text>
+                  <Server size={20} color={colors.primary} />
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>
+                    Cài Đặt Backend Gateway
+                  </Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => setSettingsModalVisible(false)}
                   style={{ padding: 4 }}
                 >
-                  <X size={20} color="#8C9BAB" />
+                  <X size={20} color={colors.subText} />
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.modalDesc}>
+              <Text style={[styles.modalDesc, { color: colors.subText }]}>
                 Cấu hình địa chỉ IP máy chủ Backend Gateway để ứng dụng kết nối trực tiếp với API cục bộ.
               </Text>
 
@@ -242,36 +364,49 @@ export default function ProfileScreen() {
                 </View>
               )}
 
-              <View style={styles.inputWrap}>
-                <Text style={styles.inputLabel}>SERVER API GATEWAY URL</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  value={apiUrl}
-                  onChangeText={setApiUrl}
-                  placeholder="http://192.168.1.18:8080/api/v1"
-                  placeholderTextColor="#6B7280"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
+              <View style={styles.formGroup}>
+                <Text style={[styles.inputLabel, { color: colors.subText }]}>ĐỊA CHỈ API GATEWAY</Text>
+                <View
+                  style={[
+                    styles.inputWrap,
+                    { backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
+                  ]}
+                >
+                  <TextInput
+                    style={[styles.input, { color: colors.text }]}
+                    placeholder="http://192.168.1.10:8080/api/v1"
+                    placeholderTextColor={colors.mutedText}
+                    value={apiUrl}
+                    onChangeText={setApiUrl}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+                <Text style={[styles.helperText, { color: colors.mutedText }]}>
+                  Ví dụ: http://192.168.1.5:8080/api/v1 (Thay bằng IP máy tính chạy backend của bạn)
+                </Text>
               </View>
 
-              <View style={styles.modalBtnRow}>
+              <View style={styles.btnRow}>
                 <TouchableOpacity
-                  style={styles.modalResetBtn}
+                  style={[
+                    styles.resetBtn,
+                    { backgroundColor: isDark ? '#161A1D' : '#F4F5F7', borderColor: colors.cardBorder },
+                  ]}
                   onPress={handleResetApiUrl}
                   activeOpacity={0.8}
                 >
-                  <RotateCw size={14} color="#8C9BAB" style={{ marginRight: 6 }} />
-                  <Text style={styles.modalResetText}>Đặt lại</Text>
+                  <RotateCw size={14} color={colors.subText} />
+                  <Text style={[styles.resetBtnText, { color: colors.subText }]}>Mặc định</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.modalSaveBtn}
+                  style={[styles.saveBtn, { backgroundColor: colors.primary }]}
                   onPress={handleSaveApiUrl}
                   activeOpacity={0.8}
                 >
-                  <Save size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
-                  <Text style={styles.modalSaveText}>Lưu cài đặt</Text>
+                  <Save size={14} color="#FFFFFF" />
+                  <Text style={styles.saveBtnText}>Lưu IP mới</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -285,27 +420,22 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#101214',
   },
   container: {
     flex: 1,
-    backgroundColor: '#101214',
   },
   topNav: {
     height: 56,
-    backgroundColor: '#101214',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#1C2127',
   },
   backBtn: {
     padding: 6,
   },
   topNavTitle: {
-    color: '#E6EDF3',
     fontSize: 18,
     fontWeight: '700',
   },
@@ -317,11 +447,9 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   userCard: {
-    backgroundColor: '#1C2127',
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
-    borderColor: '#22272B',
   },
   userCardTopRow: {
     flexDirection: 'row',
@@ -346,12 +474,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userName: {
-    color: '#E6EDF3',
     fontSize: 17,
     fontWeight: '700',
   },
   userEmail: {
-    color: '#8C9BAB',
     fontSize: 13,
     marginTop: 2,
   },
@@ -361,10 +487,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#282E33',
   },
   domainText: {
-    color: '#8C9BAB',
     fontSize: 13,
     maxWidth: 160,
   },
@@ -374,7 +498,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   addSiteLink: {
-    color: '#579DFF',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -392,10 +515,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   cardGroup: {
-    backgroundColor: '#1C2127',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#22272B',
     overflow: 'hidden',
   },
   groupItem: {
@@ -415,38 +536,32 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#161A1D',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
   },
   itemText: {
-    color: '#8C9BAB',
     fontSize: 14,
     fontWeight: '500',
   },
   itemTextActive: {
-    color: '#E6EDF3',
     fontSize: 14,
     fontWeight: '600',
   },
   groupDivider: {
     height: 1,
-    backgroundColor: '#22272B',
     marginLeft: 66,
   },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1C2127',
     borderRadius: 16,
     paddingVertical: 16,
     borderWidth: 1,
-    borderColor: '#3B2225',
   },
   logoutBtnText: {
-    color: '#F87171',
+    color: '#EF4444',
     fontSize: 14,
     fontWeight: '700',
   },
@@ -458,13 +573,11 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalBox: {
-    backgroundColor: '#1C2127',
     borderRadius: 20,
     padding: 20,
     width: '100%',
     maxWidth: 360,
     borderWidth: 1,
-    borderColor: '#282E33',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -473,12 +586,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   modalTitle: {
-    color: '#E6EDF3',
     fontSize: 16,
     fontWeight: '700',
   },
   modalDesc: {
-    color: '#8C9BAB',
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 14,
@@ -497,57 +608,60 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  inputWrap: {
+  formGroup: {
     marginBottom: 16,
   },
   inputLabel: {
-    color: '#8C9BAB',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontSize: 11,
+    fontWeight: '700',
     marginBottom: 6,
+    letterSpacing: 0.5,
   },
-  modalInput: {
-    backgroundColor: '#161A1D',
+  inputWrap: {
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#282E33',
-    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: '#E6EDF3',
+    height: 44,
+    justifyContent: 'center',
+  },
+  input: {
     fontSize: 13,
   },
-  modalBtnRow: {
+  helperText: {
+    fontSize: 11,
+    marginTop: 4,
+    lineHeight: 16,
+  },
+  btnRow: {
     flexDirection: 'row',
     gap: 10,
+    marginTop: 6,
   },
-  modalResetBtn: {
+  resetBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#161A1D',
-    borderRadius: 10,
-    paddingVertical: 10,
+    gap: 6,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#282E33',
+    paddingVertical: 12,
   },
-  modalResetText: {
-    color: '#8C9BAB',
+  resetBtnText: {
     fontSize: 13,
     fontWeight: '600',
   },
-  modalSaveBtn: {
-    flex: 1,
+  saveBtn: {
+    flex: 1.5,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1D3B6A',
-    borderRadius: 10,
-    paddingVertical: 10,
+    gap: 6,
+    borderRadius: 12,
+    paddingVertical: 12,
   },
-  modalSaveText: {
-    color: '#579DFF',
+  saveBtnText: {
+    color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
   },

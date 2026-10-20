@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { RotateCw, SquareCheck, Activity } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useThemeStore, ThemeColors } from '../../stores/useThemeStore';
 import { workspaceService } from '../../services/workspace.service';
 import { Task } from '../../types';
 import { JiraHeader } from '../../components/jira/JiraHeader';
@@ -20,6 +21,8 @@ import { JiraHeader } from '../../components/jira/JiraHeader';
 export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { colors, isDark } = useThemeStore();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [assignedTasks, setAssignedTasks] = useState<
     { task: Task; spaceName: string; workspaceName: string }[]
@@ -59,7 +62,7 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#101214" />
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.headerBg} />
       <View style={styles.container}>
         {/* Header */}
         <JiraHeader title="Bảng thông tin" />
@@ -71,8 +74,8 @@ export default function DashboardScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#579DFF"
-              colors={['#579DFF']}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
         >
@@ -198,166 +201,167 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#101214',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#101214',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  assignedCard: {
-    backgroundColor: '#1C2127',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#22272B',
-    marginBottom: 20,
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  assignedTitle: {
-    color: '#E6EDF3',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  reloadBtn: {
-    padding: 4,
-  },
-  assignedEmptyBox: {
-    paddingVertical: 10,
-  },
-  assignedEmptyText: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  tasksList: {
-    gap: 10,
-  },
-  taskRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#282E33',
-  },
-  taskTitle: {
-    color: '#E6EDF3',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  strikeThrough: {
-    textDecorationLine: 'line-through',
-    color: '#8C9BAB',
-  },
-  taskMeta: {
-    color: '#8C9BAB',
-    fontSize: 11,
-    marginTop: 2,
-  },
-  activitySection: {
-    marginBottom: 24,
-  },
-  activitySectionTitle: {
-    color: '#E6EDF3',
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  activityBox: {
-    backgroundColor: '#1C2127',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#22272B',
-  },
-  emptyActivityBox: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    paddingHorizontal: 12,
-  },
-  emptyActivityTitle: {
-    color: '#E6EDF3',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-  emptyActivitySub: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    textAlign: 'center',
-    lineHeight: 17,
-  },
-  dateGroupHeader: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 14,
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-  itemAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#1D3B6A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-    marginTop: 2,
-  },
-  itemAvatarText: {
-    color: '#579DFF',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  itemDetails: {
-    flex: 1,
-  },
-  itemMessage: {
-    color: '#E6EDF3',
-    fontSize: 14,
-    lineHeight: 19,
-    fontWeight: '500',
-  },
-  itemMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    gap: 12,
-  },
-  issueKeyBadge: {
-    backgroundColor: '#161A1D',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  issueKeyText: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  dateWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  itemDateText: {
-    color: '#8C9BAB',
-    fontSize: 12,
-  },
-});
+const getStyles = (colors: ThemeColors, isDark: boolean) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 16,
+      paddingTop: 16,
+    },
+    assignedCard: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 16,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      marginBottom: 20,
+    },
+    cardHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 10,
+    },
+    assignedTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+    },
+    reloadBtn: {
+      padding: 4,
+    },
+    assignedEmptyBox: {
+      paddingVertical: 10,
+    },
+    assignedEmptyText: {
+      color: colors.subText,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    tasksList: {
+      gap: 10,
+    },
+    taskRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 6,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    taskTitle: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    strikeThrough: {
+      textDecorationLine: 'line-through',
+      color: colors.mutedText,
+    },
+    taskMeta: {
+      color: colors.subText,
+      fontSize: 11,
+      marginTop: 2,
+    },
+    activitySection: {
+      marginBottom: 24,
+    },
+    activitySectionTitle: {
+      color: colors.text,
+      fontSize: 18,
+      fontWeight: '700',
+      marginBottom: 12,
+    },
+    activityBox: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 16,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    emptyActivityBox: {
+      alignItems: 'center',
+      paddingVertical: 24,
+      paddingHorizontal: 12,
+    },
+    emptyActivityTitle: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '600',
+      marginBottom: 6,
+      textAlign: 'center',
+    },
+    emptyActivitySub: {
+      color: colors.subText,
+      fontSize: 12,
+      textAlign: 'center',
+      lineHeight: 17,
+    },
+    dateGroupHeader: {
+      color: colors.subText,
+      fontSize: 13,
+      fontWeight: '700',
+      marginBottom: 14,
+    },
+    activityItem: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginBottom: 14,
+    },
+    itemAvatar: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.primaryBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+      marginTop: 2,
+    },
+    itemAvatarText: {
+      color: colors.primary,
+      fontWeight: '700',
+      fontSize: 13,
+    },
+    itemDetails: {
+      flex: 1,
+    },
+    itemMessage: {
+      color: colors.text,
+      fontSize: 14,
+      lineHeight: 19,
+      fontWeight: '500',
+    },
+    itemMetaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 6,
+      gap: 12,
+    },
+    issueKeyBadge: {
+      backgroundColor: colors.cardInner,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    issueKeyText: {
+      color: colors.subText,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    dateWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    itemDateText: {
+      color: colors.subText,
+      fontSize: 12,
+    },
+  });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,7 @@ import {
   FolderPlus,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useThemeStore, ThemeColors } from '../../stores/useThemeStore';
 import { workspaceService } from '../../services/workspace.service';
 import { Task, Space } from '../../types';
 import { JiraHeader } from '../../components/jira/JiraHeader';
@@ -33,6 +34,8 @@ import { CreateTaskModal } from '../../components/CreateTaskModal';
 export default function TasksScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { colors, isDark } = useThemeStore();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [tasksWithSpace, setTasksWithSpace] = useState<
     { task: Task; spaceName: string; workspaceName: string }[]
@@ -137,7 +140,7 @@ export default function TasksScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#101214" />
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.headerBg} />
       <View style={styles.container}>
         {/* Header */}
         <JiraHeader
@@ -149,7 +152,7 @@ export default function TasksScreen() {
                 activeOpacity={0.7}
                 onPress={handleOpenCreateModal}
               >
-                <Plus size={24} color="#E6EDF3" />
+                <Plus size={24} color={colors.text} />
               </TouchableOpacity>
             </>
           }
@@ -163,11 +166,11 @@ export default function TasksScreen() {
             activeOpacity={0.75}
             onPress={() => setFilterDropdownVisible(true)}
           >
-            <User size={15} color="#8C9BAB" style={{ marginRight: 6 }} />
+            <User size={15} color={colors.subText} style={{ marginRight: 6 }} />
             <Text style={styles.filterPillText} numberOfLines={1}>
               {selectedFilter}
             </Text>
-            <ChevronDown size={16} color="#8C9BAB" style={{ marginLeft: 6 }} />
+            <ChevronDown size={16} color={colors.subText} style={{ marginLeft: 6 }} />
           </TouchableOpacity>
 
           {/* View Mode Toggle Buttons */}
@@ -182,7 +185,7 @@ export default function TasksScreen() {
             >
               <List
                 size={18}
-                color={viewMode === 'list' ? '#579DFF' : '#8C9BAB'}
+                color={viewMode === 'list' ? colors.primary : colors.subText}
               />
             </TouchableOpacity>
 
@@ -196,7 +199,7 @@ export default function TasksScreen() {
             >
               <LayoutGrid
                 size={18}
-                color={viewMode === 'board' ? '#579DFF' : '#8C9BAB'}
+                color={viewMode === 'board' ? colors.primary : colors.subText}
               />
             </TouchableOpacity>
           </View>
@@ -205,7 +208,7 @@ export default function TasksScreen() {
         {/* Content Area */}
         {loading ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="small" color="#579DFF" />
+            <ActivityIndicator size="small" color={colors.primary} />
             <Text style={styles.loadingText}>Đang tải danh sách công việc...</Text>
           </View>
         ) : filteredTasks.length === 0 ? (
@@ -383,244 +386,245 @@ export default function TasksScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#101214',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#101214',
-  },
-  iconBtn: {
-    padding: 4,
-  },
-  toolbarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  filterPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1C2127',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#282E33',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    maxWidth: 240,
-  },
-  filterPillText: {
-    color: '#E6EDF3',
-    fontSize: 13,
-    fontWeight: '600',
-    flexShrink: 1,
-  },
-  viewModeGroup: {
-    flexDirection: 'row',
-    backgroundColor: '#161A1D',
-    borderRadius: 10,
-    padding: 2,
-    gap: 4,
-  },
-  viewModeBtn: {
-    padding: 8,
-    borderRadius: 8,
-  },
-  viewModeBtnActive: {
-    backgroundColor: '#1D3B6A',
-  },
-  listContent: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  issueCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1C2127',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#22272B',
-  },
-  checkboxTouch: {
-    marginRight: 14,
-    padding: 2,
-  },
-  issueTextWrap: {
-    flex: 1,
-  },
-  issueTitle: {
-    color: '#E6EDF3',
-    fontSize: 15,
-    fontWeight: '600',
-    lineHeight: 20,
-  },
-  strikeThroughText: {
-    textDecorationLine: 'line-through',
-    color: '#8C9BAB',
-  },
-  issueSubtitle: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  centerContainer: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    marginTop: 10,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 20,
-  },
-  emptyIconCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: '#161A1D',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    color: '#E6EDF3',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 20,
-  },
-  emptyActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1D3B6A',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    gap: 8,
-  },
-  emptyActionBtnText: {
-    color: '#579DFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  boardScroll: {
-    flex: 1,
-  },
-  boardContent: {
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  boardColumn: {
-    width: 260,
-    backgroundColor: '#161A1D',
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#22272B',
-  },
-  columnHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  columnTitle: {
-    color: '#E6EDF3',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  columnCountBadge: {
-    backgroundColor: '#282E33',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  columnCountText: {
-    color: '#8C9BAB',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  columnEmptyBox: {
-    paddingVertical: 30,
-    alignItems: 'center',
-  },
-  columnEmptyText: {
-    color: '#8C9BAB',
-    fontSize: 12,
-  },
-  boardCard: {
-    backgroundColor: '#1C2127',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#282E33',
-  },
-  boardCardTitle: {
-    color: '#E6EDF3',
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 18,
-  },
-  boardCardSub: {
-    color: '#8C9BAB',
-    fontSize: 11,
-    marginTop: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  dropdownMenu: {
-    backgroundColor: '#1C2127',
-    borderRadius: 16,
-    width: '85%',
-    maxWidth: 320,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#282E33',
-  },
-  dropdownTitle: {
-    color: '#8C9BAB',
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    marginBottom: 12,
-    paddingHorizontal: 8,
-  },
-  dropdownItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  dropdownItemText: {
-    color: '#E6EDF3',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  dropdownItemTextActive: {
-    color: '#579DFF',
-    fontWeight: '700',
-  },
-});
+const getStyles = (colors: ThemeColors, isDark: boolean) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    iconBtn: {
+      padding: 4,
+    },
+    toolbarRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    filterPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardBg,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      maxWidth: 240,
+    },
+    filterPillText: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '600',
+      flexShrink: 1,
+    },
+    viewModeGroup: {
+      flexDirection: 'row',
+      backgroundColor: colors.segmentBg,
+      borderRadius: 10,
+      padding: 2,
+      gap: 4,
+    },
+    viewModeBtn: {
+      padding: 8,
+      borderRadius: 8,
+    },
+    viewModeBtnActive: {
+      backgroundColor: colors.segmentActiveBg,
+    },
+    listContent: {
+      flex: 1,
+      paddingHorizontal: 16,
+    },
+    issueCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardBg,
+      borderRadius: 14,
+      padding: 14,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    checkboxTouch: {
+      marginRight: 14,
+      padding: 2,
+    },
+    issueTextWrap: {
+      flex: 1,
+    },
+    issueTitle: {
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '600',
+      lineHeight: 20,
+    },
+    strikeThroughText: {
+      textDecorationLine: 'line-through',
+      color: colors.mutedText,
+    },
+    issueSubtitle: {
+      color: colors.subText,
+      fontSize: 12,
+      marginTop: 4,
+    },
+    centerContainer: {
+      padding: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    loadingText: {
+      color: colors.subText,
+      fontSize: 13,
+      marginTop: 10,
+    },
+    emptyContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 60,
+      paddingHorizontal: 20,
+    },
+    emptyIconCircle: {
+      width: 68,
+      height: 68,
+      borderRadius: 34,
+      backgroundColor: colors.cardInner,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
+    emptyTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+      marginBottom: 8,
+    },
+    emptySubtitle: {
+      color: colors.subText,
+      fontSize: 13,
+      textAlign: 'center',
+      lineHeight: 18,
+      marginBottom: 20,
+    },
+    emptyActionBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.primaryBg,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 12,
+      gap: 8,
+    },
+    emptyActionBtnText: {
+      color: colors.primary,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    boardScroll: {
+      flex: 1,
+    },
+    boardContent: {
+      paddingHorizontal: 16,
+      gap: 12,
+    },
+    boardColumn: {
+      width: 260,
+      backgroundColor: colors.cardInner,
+      borderRadius: 16,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    columnHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    columnTitle: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    columnCountBadge: {
+      backgroundColor: colors.segmentBg,
+      borderRadius: 10,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+    },
+    columnCountText: {
+      color: colors.subText,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    columnEmptyBox: {
+      paddingVertical: 30,
+      alignItems: 'center',
+    },
+    columnEmptyText: {
+      color: colors.subText,
+      fontSize: 12,
+    },
+    boardCard: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    boardCardTitle: {
+      color: colors.text,
+      fontSize: 13,
+      fontWeight: '600',
+      lineHeight: 18,
+    },
+    boardCardSub: {
+      color: colors.subText,
+      fontSize: 11,
+      marginTop: 4,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    dropdownMenu: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 16,
+      width: '85%',
+      maxWidth: 320,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    dropdownTitle: {
+      color: colors.subText,
+      fontSize: 12,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      marginBottom: 12,
+      paddingHorizontal: 8,
+    },
+    dropdownItem: {
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+    },
+    dropdownItemText: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    dropdownItemTextActive: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+  });

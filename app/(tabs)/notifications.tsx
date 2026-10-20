@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import {
   Building,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/useAuthStore';
+import { useThemeStore, ThemeColors } from '../../stores/useThemeStore';
 import { workspaceService } from '../../services/workspace.service';
 import { Workspace } from '../../types';
 import { JiraHeader } from '../../components/jira/JiraHeader';
@@ -30,6 +31,8 @@ import { JiraHeader } from '../../components/jira/JiraHeader';
 export default function NotificationsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { colors, isDark } = useThemeStore();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [pendingWorkspaces, setPendingWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +107,7 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#101214" />
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.headerBg} />
       <View style={styles.container}>
         {/* Header */}
         <JiraHeader
@@ -112,14 +115,14 @@ export default function NotificationsScreen() {
           rightActions={
             <>
               <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
-                <Bell size={22} color="#E6EDF3" />
+                <Bell size={22} color={colors.text} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.iconBtn}
                 activeOpacity={0.7}
                 onPress={() => router.push('/(tabs)/profile')}
               >
-                <Settings size={22} color="#E6EDF3" />
+                <Settings size={22} color={colors.text} />
               </TouchableOpacity>
             </>
           }
@@ -172,7 +175,7 @@ export default function NotificationsScreen() {
             activeOpacity={0.7}
             onPress={onRefresh}
           >
-            <MoreVertical size={20} color="#8C9BAB" />
+            <MoreVertical size={20} color={colors.subText} />
           </TouchableOpacity>
         </View>
 
@@ -184,20 +187,20 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#579DFF"
-              colors={['#579DFF']}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
         >
           {loading ? (
             <View style={styles.centerContainer}>
-              <ActivityIndicator size="small" color="#579DFF" />
+              <ActivityIndicator size="small" color={colors.primary} />
               <Text style={styles.loadingText}>Đang tải thông báo...</Text>
             </View>
           ) : pendingWorkspaces.length === 0 ? (
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconCircle}>
-                <CheckCircle2 size={40} color="#579DFF" />
+                <CheckCircle2 size={40} color={colors.primary} />
               </View>
               <Text style={styles.emptyTitle}>Không có lời mời nào</Text>
               <Text style={styles.emptySubtitle}>
@@ -276,193 +279,194 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#101214',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#101214',
-  },
-  iconBtn: {
-    padding: 4,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  pillsGroup: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  filterPill: {
-    backgroundColor: '#1C2127',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#282E33',
-  },
-  filterPillActive: {
-    backgroundColor: '#22272B',
-    borderColor: '#38414A',
-  },
-  filterPillBadge: {
-    borderColor: '#1D3B6A',
-  },
-  filterPillBadgeText: {
-    color: '#579DFF',
-    fontWeight: '700',
-  },
-  filterPillText: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  filterPillTextActive: {
-    color: '#E6EDF3',
-    fontWeight: '700',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  centerContainer: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    marginTop: 10,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 80,
-    paddingHorizontal: 20,
-  },
-  emptyIconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#161A1D',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    color: '#E6EDF3',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 19,
-    maxWidth: 280,
-  },
-  invitationList: {
-    marginTop: 6,
-    gap: 12,
-  },
-  sectionHeader: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  inviteCard: {
-    backgroundColor: '#1C2127',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#282E33',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  avatarWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#1D3B6A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  cardHeaderInfo: {
-    flex: 1,
-  },
-  inviteCategory: {
-    color: '#579DFF',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  workspaceName: {
-    color: '#E6EDF3',
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  inviteDesc: {
-    color: '#8C9BAB',
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 8,
-  },
-  inviteTime: {
-    color: '#6B7280',
-    fontSize: 11,
-    marginBottom: 14,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#282E33',
-    paddingTop: 12,
-  },
-  btnDecline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#282E33',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  btnDeclineText: {
-    color: '#F87171',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  btnAccept: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#137333',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 10,
-    minWidth: 100,
-    justifyContent: 'center',
-  },
-  btnAcceptText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  btnDisabled: {
-    opacity: 0.6,
-  },
-});
+const getStyles = (colors: ThemeColors, isDark: boolean) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    iconBtn: {
+      padding: 6,
+    },
+    filterRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+    },
+    pillsGroup: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    filterPill: {
+      backgroundColor: colors.cardBg,
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    filterPillActive: {
+      backgroundColor: colors.segmentActiveBg,
+      borderColor: colors.primary,
+    },
+    filterPillBadge: {
+      borderColor: colors.primary,
+    },
+    filterPillBadgeText: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    filterPillText: {
+      color: colors.subText,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    filterPillTextActive: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 16,
+    },
+    centerContainer: {
+      padding: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    loadingText: {
+      color: colors.subText,
+      fontSize: 13,
+      marginTop: 10,
+    },
+    emptyContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 80,
+      paddingHorizontal: 20,
+    },
+    emptyIconCircle: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: colors.cardInner,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
+    emptyTitle: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+      marginBottom: 8,
+    },
+    emptySubtitle: {
+      color: colors.subText,
+      fontSize: 13,
+      textAlign: 'center',
+      lineHeight: 19,
+      maxWidth: 280,
+    },
+    invitationList: {
+      marginTop: 6,
+      gap: 12,
+    },
+    sectionHeader: {
+      color: colors.subText,
+      fontSize: 13,
+      fontWeight: '700',
+      marginBottom: 6,
+    },
+    inviteCard: {
+      backgroundColor: colors.cardBg,
+      borderRadius: 16,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    avatarWrap: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: colors.primaryBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    cardHeaderInfo: {
+      flex: 1,
+    },
+    inviteCategory: {
+      color: colors.primary,
+      fontSize: 10,
+      fontWeight: '800',
+      letterSpacing: 0.5,
+    },
+    workspaceName: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: '700',
+      marginTop: 2,
+    },
+    inviteDesc: {
+      color: colors.subText,
+      fontSize: 13,
+      lineHeight: 18,
+      marginBottom: 8,
+    },
+    inviteTime: {
+      color: colors.mutedText,
+      fontSize: 11,
+      marginBottom: 14,
+    },
+    actionRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: 10,
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+      paddingTop: 12,
+    },
+    btnDecline: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.dangerBg,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 10,
+    },
+    btnDeclineText: {
+      color: colors.dangerText,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    btnAccept: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#137333',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 10,
+      minWidth: 100,
+      justifyContent: 'center',
+    },
+    btnAcceptText: {
+      color: '#FFFFFF',
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    btnDisabled: {
+      opacity: 0.6,
+    },
+  });

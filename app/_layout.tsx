@@ -3,14 +3,17 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuthStore } from '../stores/useAuthStore';
+import { useThemeStore } from '../stores/useThemeStore';
 
 export default function RootLayout() {
   const { isAuthenticated, isLoading, loadAuthFromStorage } = useAuthStore();
+  const { initTheme, isDark, colors } = useThemeStore();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     loadAuthFromStorage();
+    initTheme();
   }, []);
 
   useEffect(() => {
@@ -29,20 +32,20 @@ export default function RootLayout() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#111827" />
-        <StatusBar style="dark" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
       </View>
     );
   }
 
   return (
     <>
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#FFFFFF' },
+          contentStyle: { backgroundColor: colors.bg },
         }}
       >
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
