@@ -1,3 +1,5 @@
+import { LanguageSelector } from '../../components/LanguageSelector';
+import { useTranslation } from '../../i18n';
 import React, { useState } from 'react';
 import {
   View,
@@ -22,17 +24,18 @@ export default function LoginScreen() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
   const { colors, isDark, toggleTheme } = useThemeStore();
+  const { t } = useTranslation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState<import('../../i18n').TranslationKey | ''>('');
   const [isNetworkError, setIsNetworkError] = useState(false);
   const [configModalVisible, setConfigModalVisible] = useState(false);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      setErrorMsg('Vui lòng nhập Email/Username và Mật khẩu.');
+      setErrorMsg("Vui lòng nhập Email/Username và Mật khẩu.");
       setIsNetworkError(false);
       return;
     }
@@ -48,11 +51,11 @@ export default function LoginScreen() {
       console.error(err);
       if (err.message === 'Network Error' || !err.response) {
         setIsNetworkError(true);
-        setErrorMsg('Không thể kết nối đến Backend Server (Lỗi Network Error). Vui lòng nhấn nút Cấu hình IP bên dưới để cập nhật lại IP máy tính.');
+        setErrorMsg("Không thể kết nối đến Backend Server (Lỗi Network Error). Vui lòng nhấn nút Cấu hình IP bên dưới để cập nhật lại IP máy tính.");
       } else {
         setIsNetworkError(false);
         setErrorMsg(
-          err.response?.data?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.'
+          "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin."
         );
       }
     } finally {
@@ -71,6 +74,7 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Top Action Bar with Theme Toggle */}
+        <LanguageSelector />
         <View style={styles.topActionRow}>
           <TouchableOpacity
             style={[
@@ -86,12 +90,12 @@ export default function LoginScreen() {
             {isDark ? (
               <>
                 <Sun size={15} color="#FBBF24" />
-                <Text style={[styles.themeToggleText, { color: colors.text }]}>Giao diện Sáng</Text>
+                <Text style={[styles.themeToggleText, { color: colors.text }]}>{t("Giao diện Sáng")}</Text>
               </>
             ) : (
               <>
                 <Moon size={15} color="#6366F1" />
-                <Text style={[styles.themeToggleText, { color: colors.text }]}>Giao diện Tối</Text>
+                <Text style={[styles.themeToggleText, { color: colors.text }]}>{t("Giao diện Tối")}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -112,22 +116,20 @@ export default function LoginScreen() {
               <Sparkles size={24} color={isDark ? '#579DFF' : '#0052CC'} />
             </View>
             <Text style={[styles.brandTitle, { color: colors.text }]}>PROGA</Text>
-            <Text style={[styles.title, { color: colors.text }]}>Đăng Nhập Hệ Thống</Text>
-            <Text style={[styles.subtitle, { color: colors.subText }]}>
-              Truy cập Workspace và làm việc cùng Bộ ba AI Agents trên Mobile
-            </Text>
+            <Text style={[styles.title, { color: colors.text }]}>{t("Đăng Nhập Hệ Thống")}</Text>
+            <Text style={[styles.subtitle, { color: colors.subText }]}>{t("Truy cập Workspace và làm việc cùng Bộ ba AI Agents trên Mobile")}</Text>
           </View>
 
           {!!errorMsg && (
             <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{errorMsg}</Text>
+              <Text style={styles.errorText}>{errorMsg ? t(errorMsg) : ''}</Text>
               {isNetworkError && (
                 <TouchableOpacity
                   style={styles.configErrorBtn}
                   onPress={() => setConfigModalVisible(true)}
                 >
                   <Server size={14} color="#FFFFFF" />
-                  <Text style={styles.configErrorBtnText}>⚙️ Cấu Hình IP Server Ngay</Text>
+                  <Text style={styles.configErrorBtnText}>{t("⚙️ Cấu Hình IP Server Ngay")}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -136,7 +138,7 @@ export default function LoginScreen() {
           {/* Form */}
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.subText }]}>EMAIL HOẶC USERNAME</Text>
+              <Text style={[styles.label, { color: colors.subText }]}>{t("EMAIL HOẶC USERNAME")}</Text>
               <View
                 style={[
                   styles.inputWrapper,
@@ -146,7 +148,7 @@ export default function LoginScreen() {
                 <Mail size={18} color={colors.subText} style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, { color: colors.text }]}
-                  placeholder="developer@proga.vn hoặc pm_sonluu"
+                  placeholder={t("developer@proga.vn hoặc pm_sonluu")}
                   placeholderTextColor={colors.mutedText}
                   autoCapitalize="none"
                   value={email}
@@ -156,7 +158,7 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.subText }]}>MẬT KHẨU</Text>
+              <Text style={[styles.label, { color: colors.subText }]}>{t("MẬT KHẨU")}</Text>
               <View
                 style={[
                   styles.inputWrapper,
@@ -189,16 +191,16 @@ export default function LoginScreen() {
               ) : (
                 <>
                   <LogIn size={18} color="#FFFFFF" />
-                  <Text style={styles.loginBtnText}>ĐĂNG NHẬP</Text>
+                  <Text style={styles.loginBtnText}>{t("ĐĂNG NHẬP")}</Text>
                 </>
               )}
             </TouchableOpacity>
           </View>
 
           <View style={styles.footerLink}>
-            <Text style={[styles.footerText, { color: colors.subText }]}>Chưa có tài khoản? </Text>
+            <Text style={[styles.footerText, { color: colors.subText }]}>{t("Chưa có tài khoản? ")}</Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-              <Text style={[styles.linkText, { color: colors.primary }]}>Đăng ký ngay</Text>
+              <Text style={[styles.linkText, { color: colors.primary }]}>{t("Đăng ký ngay")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -214,9 +216,7 @@ export default function LoginScreen() {
             onPress={() => setConfigModalVisible(true)}
           >
             <Server size={14} color={colors.subText} />
-            <Text style={[styles.serverConfigTriggerText, { color: colors.subText }]}>
-              Cấu hình IP Backend Server
-            </Text>
+            <Text style={[styles.serverConfigTriggerText, { color: colors.subText }]}>{t("Cấu hình IP Backend Server")}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

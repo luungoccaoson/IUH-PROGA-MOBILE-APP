@@ -110,6 +110,9 @@ export interface ChatMessage {
   threadId: number;
   senderType: 'USER' | 'ASSISTANT' | 'SYSTEM';
   messageContent: string;
+  // Local system examples can be translated; real chat content stays untouched.
+  systemGenerated?: boolean;
+  systemMessageValues?: Record<string, string | number>;
   jsonPayload?: string; // Task Deconstruction preview JSON
   createdAt: string;
 }

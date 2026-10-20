@@ -1,3 +1,4 @@
+import { translate as tr, useTranslation as useSystemTranslation } from '../i18n';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
@@ -15,6 +16,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
   review,
   done,
 }) => {
+  useSystemTranslation();
   const total = todo + inProgress + review + done || 1;
   const radius = 50;
   const strokeWidth = 12;
@@ -112,32 +114,32 @@ export const DonutChart: React.FC<DonutChartProps> = ({
         </Svg>
         <View style={styles.centerTextContainer}>
           <Text style={styles.totalText}>{todo + inProgress + review + done}</Text>
-          <Text style={styles.totalLabel}>TỔNG CỘNG</Text>
+          <Text style={styles.totalLabel}>{tr("TỔNG CỘNG")}</Text>
         </View>
       </View>
 
       <View style={styles.legendContainer}>
         <View style={styles.legendItem}>
           <View style={[styles.dot, { backgroundColor: '#A855F7' }]} />
-          <Text style={styles.legendText}>Đã xong (Done)</Text>
+          <Text style={styles.legendText}>{tr("Đã xong (Done)")}</Text>
 
           <Text style={styles.legendCount}>{done}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.dot, { backgroundColor: '#1A73E8' }]} />
-          <Text style={styles.legendText}>Đang làm (In Progress)</Text>
+          <Text style={styles.legendText}>{tr("Đang làm (In Progress)")}</Text>
 
           <Text style={styles.legendCount}>{inProgress}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.dot, { backgroundColor: '#B06000' }]} />
-          <Text style={styles.legendText}>Đang duyệt (Review)</Text>
+          <Text style={styles.legendText}>{tr("Đang duyệt (Review)")}</Text>
 
           <Text style={styles.legendCount}>{review}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.dot, { backgroundColor: '#137333' }]} />
-          <Text style={styles.legendText}>Cần làm (To Do)</Text>
+          <Text style={styles.legendText}>{tr("Cần làm (To Do)")}</Text>
 
           <Text style={styles.legendCount}>{todo}</Text>
         </View>

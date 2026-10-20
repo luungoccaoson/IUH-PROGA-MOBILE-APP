@@ -1,3 +1,4 @@
+import { systemLabel, translate as tr, useTranslation as useSystemTranslation } from '../i18n';
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { User, Calendar, Trash2 } from 'lucide-react-native';
@@ -16,6 +17,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
   onDelete,
 }) => {
   const { colors, isDark } = useThemeStore();
+  const { locale } = useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const getPriorityStyle = (priority: string) => {
@@ -37,6 +39,8 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
         return { bg: isDark ? '#1C3829' : '#E3FCEF', text: '#36B37E', label: 'DONE' };
       case 'IN_PROGRESS':
         return { bg: isDark ? '#1C2B42' : '#DEEBFF', text: '#579DFF', label: 'IN PROGRESS' };
+      case 'REVIEW':
+        return { bg: isDark ? '#332E1B' : '#FEF7E0', text: '#FFAB00', label: 'REVIEW' };
       default:
         return { bg: isDark ? '#22272B' : '#F4F5F7', text: colors.subText, label: 'TODO' };
     }
@@ -68,13 +72,13 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             onPress={handleNextStatus}
           >
             <Text style={[styles.badgeText, { color: statusStyle.text }]}>
-              {statusStyle.label}
+              {systemLabel(statusStyle.label)}
             </Text>
           </TouchableOpacity>
 
           <View style={[styles.badge, { backgroundColor: priorityStyle.bg }]}>
             <Text style={[styles.badgeText, { color: priorityStyle.text }]}>
-              {task.priority}
+              {systemLabel(task.priority)}
             </Text>
           </View>
 
@@ -99,7 +103,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
             <User size={12} color={colors.subText} />
           </View>
           <Text style={styles.assigneeName} numberOfLines={1}>
-            {task.ownerName || 'Chưa giao'}
+            {task.ownerName || tr("Chưa giao")}
           </Text>
         </View>
 
@@ -107,7 +111,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
           <View style={styles.dueDate}>
             <Calendar size={12} color={colors.subText} />
             <Text style={styles.dueText}>
-              {new Date(task.dueDate).toLocaleDateString('vi-VN')}
+              {new Date(task.dueDate).toLocaleDateString(locale)}
             </Text>
           </View>
         )}

@@ -1,3 +1,5 @@
+import { LanguageSelector } from '../../components/LanguageSelector';
+import { useTranslation } from '../../i18n';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -36,6 +38,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const { colors, isDark, toggleTheme } = useThemeStore();
+  const { t } = useTranslation();
 
   const [apiUrl, setApiUrl] = useState('');
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
@@ -65,10 +68,10 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = async () => {
-    Alert.alert('Xác nhận đăng xuất', 'Bạn có chắc chắn muốn đăng xuất tài khoản?', [
-      { text: 'Hủy', style: 'cancel' },
+    Alert.alert(t("Xác nhận đăng xuất"), t("Bạn có chắc chắn muốn đăng xuất tài khoản?"), [
+      { text: t("Hủy"), style: 'cancel' },
       {
-        text: 'Đăng xuất',
+        text: t("Đăng xuất"),
         style: 'destructive',
         onPress: async () => {
           await logout();
@@ -106,11 +109,12 @@ export default function ProfileScreen() {
           >
             <ArrowLeft size={22} color={colors.text} />
           </TouchableOpacity>
-          <Text style={[styles.topNavTitle, { color: colors.text }]}>Tài khoản</Text>
+          <Text style={[styles.topNavTitle, { color: colors.text }]}>{t("Tài khoản")}</Text>
           <View style={{ width: 36 }} />
         </View>
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+          <LanguageSelector />
           {/* User Info Card */}
           <View
             style={[
@@ -135,7 +139,7 @@ export default function ProfileScreen() {
               </Text>
 
               <View style={styles.addSiteWrap}>
-                <Text style={[styles.addSiteLink, { color: colors.primary }]}>Thêm trang web</Text>
+                <Text style={[styles.addSiteLink, { color: colors.primary }]}>{t("Thêm trang web")}</Text>
                 <View style={styles.badgeOrange}>
                   <Text style={styles.badgeOrangeText}>7</Text>
                 </View>
@@ -170,10 +174,10 @@ export default function ProfileScreen() {
               </View>
               <View style={{ flex: 1, marginRight: 8 }}>
                 <Text style={[styles.itemTextActive, { color: colors.text }]}>
-                  Giao diện: {isDark ? 'Chế độ Tối (Dark)' : 'Chế độ Sáng (Light)'}
+                  {t('Giao diện: ')}{isDark ? t("Chế độ Tối (Dark)") : t("Chế độ Sáng (Light)")}
                 </Text>
                 <Text style={{ fontSize: 11, color: colors.subText, marginTop: 2 }}>
-                  Nhấn để chuyển sang giao diện {isDark ? 'Sáng' : 'Tối'}
+                  {t('Nhấn để chuyển sang giao diện ')}{isDark ? t("Sáng") : t("Tối")}
                 </Text>
               </View>
               <View
@@ -196,7 +200,7 @@ export default function ProfileScreen() {
                     color: isDark ? '#579DFF' : '#0052CC',
                   }}
                 >
-                  {isDark ? '🌙 Tối' : '☀️ Sáng'}
+                  {isDark ? t("🌙 Tối") : t("☀️ Sáng")}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -217,9 +221,7 @@ export default function ProfileScreen() {
               >
                 <Settings size={18} color={colors.text} />
               </View>
-              <Text style={[styles.itemTextActive, { color: colors.text }]}>
-                Cài đặt kết nối máy chủ
-              </Text>
+              <Text style={[styles.itemTextActive, { color: colors.text }]}>{t("Cài đặt kết nối máy chủ")}</Text>
             </TouchableOpacity>
 
             <View style={[styles.groupDivider, { backgroundColor: colors.divider }]} />
@@ -234,7 +236,7 @@ export default function ProfileScreen() {
               >
                 <Bell size={18} color={colors.subText} />
               </View>
-              <Text style={[styles.itemText, { color: colors.subText }]}>Cài đặt thông báo</Text>
+              <Text style={[styles.itemText, { color: colors.subText }]}>{t("Cài đặt thông báo")}</Text>
             </View>
           </View>
 
@@ -255,7 +257,7 @@ export default function ProfileScreen() {
               >
                 <UserPlus size={18} color={colors.subText} />
               </View>
-              <Text style={[styles.itemText, { color: colors.subText }]}>Mời mọi người vào trang</Text>
+              <Text style={[styles.itemText, { color: colors.subText }]}>{t("Mời mọi người vào trang")}</Text>
             </View>
 
             <View style={[styles.groupDivider, { backgroundColor: colors.divider }]} />
@@ -270,7 +272,7 @@ export default function ProfileScreen() {
               >
                 <Mail size={18} color={colors.subText} />
               </View>
-              <Text style={[styles.itemText, { color: colors.subText }]}>Gửi ý kiến phản hồi</Text>
+              <Text style={[styles.itemText, { color: colors.subText }]}>{t("Gửi ý kiến phản hồi")}</Text>
             </View>
 
             <View style={[styles.groupDivider, { backgroundColor: colors.divider }]} />
@@ -285,7 +287,7 @@ export default function ProfileScreen() {
               >
                 <Star size={18} color={colors.subText} />
               </View>
-              <Text style={[styles.itemText, { color: colors.subText }]}>Đánh giá ứng dụng của chúng tôi</Text>
+              <Text style={[styles.itemText, { color: colors.subText }]}>{t("Đánh giá ứng dụng của chúng tôi")}</Text>
             </View>
 
             <View style={[styles.groupDivider, { backgroundColor: colors.divider }]} />
@@ -300,7 +302,7 @@ export default function ProfileScreen() {
               >
                 <LayoutGrid size={18} color={colors.subText} />
               </View>
-              <Text style={[styles.itemText, { color: colors.subText }]}>Xem thêm ứng dụng Atlassian</Text>
+              <Text style={[styles.itemText, { color: colors.subText }]}>{t("Xem thêm ứng dụng Atlassian")}</Text>
             </View>
           </View>
 
@@ -317,7 +319,7 @@ export default function ProfileScreen() {
             activeOpacity={0.75}
           >
             <LogOut size={18} color="#EF4444" style={{ marginRight: 10 }} />
-            <Text style={styles.logoutBtnText}>Đăng xuất tài khoản</Text>
+            <Text style={styles.logoutBtnText}>{t("Đăng xuất tài khoản")}</Text>
           </TouchableOpacity>
 
           <View style={{ height: 40 }} />
@@ -340,9 +342,7 @@ export default function ProfileScreen() {
               <View style={styles.modalHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Server size={20} color={colors.primary} />
-                  <Text style={[styles.modalTitle, { color: colors.text }]}>
-                    Cài Đặt Backend Gateway
-                  </Text>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>{t("Cài Đặt Backend Gateway")}</Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => setSettingsModalVisible(false)}
@@ -352,20 +352,16 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
               </View>
 
-              <Text style={[styles.modalDesc, { color: colors.subText }]}>
-                Cấu hình địa chỉ IP máy chủ Backend Gateway để ứng dụng kết nối trực tiếp với API cục bộ.
-              </Text>
+              <Text style={[styles.modalDesc, { color: colors.subText }]}>{t("Cấu hình địa chỉ IP máy chủ Backend Gateway để ứng dụng kết nối trực tiếp với API cục bộ.")}</Text>
 
               {savedSuccess && (
                 <View style={styles.successBanner}>
-                  <Text style={styles.successBannerText}>
-                    ✓ Đã lưu cấu hình IP thành công!
-                  </Text>
+                  <Text style={styles.successBannerText}>{t("✓ Đã lưu cấu hình IP thành công!")}</Text>
                 </View>
               )}
 
               <View style={styles.formGroup}>
-                <Text style={[styles.inputLabel, { color: colors.subText }]}>ĐỊA CHỈ API GATEWAY</Text>
+                <Text style={[styles.inputLabel, { color: colors.subText }]}>{t("ĐỊA CHỈ API GATEWAY")}</Text>
                 <View
                   style={[
                     styles.inputWrap,
@@ -382,9 +378,7 @@ export default function ProfileScreen() {
                     autoCorrect={false}
                   />
                 </View>
-                <Text style={[styles.helperText, { color: colors.mutedText }]}>
-                  Ví dụ: http://192.168.1.5:8080/api/v1 (Thay bằng IP máy tính chạy backend của bạn)
-                </Text>
+                <Text style={[styles.helperText, { color: colors.mutedText }]}>{t("Ví dụ: http://192.168.1.5:8080/api/v1 (Thay bằng IP máy tính chạy backend của bạn)")}</Text>
               </View>
 
               <View style={styles.btnRow}>
@@ -397,7 +391,7 @@ export default function ProfileScreen() {
                   activeOpacity={0.8}
                 >
                   <RotateCw size={14} color={colors.subText} />
-                  <Text style={[styles.resetBtnText, { color: colors.subText }]}>Mặc định</Text>
+                  <Text style={[styles.resetBtnText, { color: colors.subText }]}>{t("Mặc định")}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -406,7 +400,7 @@ export default function ProfileScreen() {
                   activeOpacity={0.8}
                 >
                   <Save size={14} color="#FFFFFF" />
-                  <Text style={styles.saveBtnText}>Lưu IP mới</Text>
+                  <Text style={styles.saveBtnText}>{t("Lưu IP mới")}</Text>
                 </TouchableOpacity>
               </View>
             </View>

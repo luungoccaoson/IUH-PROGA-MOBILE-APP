@@ -1,3 +1,4 @@
+import { translate as tr, useTranslation as useSystemTranslation } from '../i18n';
 import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { X } from 'lucide-react-native';
@@ -18,6 +19,7 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   workspaceToEdit,
 }) => {
   const { colors, isDark } = useThemeStore();
+  useSystemTranslation();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,7 +38,7 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      setError('Vui lòng nhập tên Workspace');
+      setError("Vui lòng nhập tên Workspace");
       return;
     }
     try {
@@ -45,7 +47,7 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
       await onSubmit(name.trim(), description.trim());
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Không thể lưu Workspace.');
+      setError("Không thể lưu Workspace.");
     } finally {
       setLoading(false);
     }
@@ -57,7 +59,7 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
         <View style={[styles.modalCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
           <View style={styles.header}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
-              {workspaceToEdit ? 'Chỉnh sửa Workspace' : 'Tạo Workspace Mới'}
+              {workspaceToEdit ? tr("Chỉnh sửa Workspace") : tr("Tạo Workspace Mới")}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X size={20} color={colors.subText} />
@@ -66,12 +68,12 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
 
           {!!error && (
             <View style={[styles.errorBox, { backgroundColor: colors.dangerBg, borderColor: colors.dangerText }]}>
-              <Text style={[styles.errorText, { color: colors.dangerText }]}>{error}</Text>
+              <Text style={[styles.errorText, { color: colors.dangerText }]}>{tr(error)}</Text>
             </View>
           )}
 
           <View style={styles.formGroup}>
-            <Text style={[styles.label, { color: colors.subText }]}>TÊN WORKSPACE</Text>
+            <Text style={[styles.label, { color: colors.subText }]}>{tr("TÊN WORKSPACE")}</Text>
             <TextInput
               style={[
                 styles.input,
@@ -81,7 +83,7 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                   color: colors.text,
                 },
               ]}
-              placeholder="Ví dụ: Dự án tốt nghiệp"
+              placeholder={tr("Ví dụ: Dự án tốt nghiệp")}
               placeholderTextColor={colors.mutedText}
               value={name}
               onChangeText={setName}
@@ -89,7 +91,7 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={[styles.label, { color: colors.subText }]}>MÔ TẢ CHI TIẾT</Text>
+            <Text style={[styles.label, { color: colors.subText }]}>{tr("MÔ TẢ CHI TIẾT")}</Text>
             <TextInput
               style={[
                 styles.input,
@@ -100,7 +102,7 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                   color: colors.text,
                 },
               ]}
-              placeholder="Ví dụ: KLTN hệ thống tích hợp AI agents..."
+              placeholder={tr("Ví dụ: KLTN hệ thống tích hợp AI agents...")}
               placeholderTextColor={colors.mutedText}
               multiline
               numberOfLines={3}
@@ -122,7 +124,7 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
               onPress={onClose}
               disabled={loading}
             >
-              <Text style={[styles.cancelText, { color: colors.subText }]}>HỦY</Text>
+              <Text style={[styles.cancelText, { color: colors.subText }]}>{tr("HỦY")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -134,7 +136,7 @@ export const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <Text style={styles.submitText}>
-                  {workspaceToEdit ? 'CẬP NHẬT' : 'TẠO MỚI'}
+                  {workspaceToEdit ? tr("CẬP NHẬT") : tr("TẠO MỚI")}
                 </Text>
               )}
             </TouchableOpacity>

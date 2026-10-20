@@ -1,3 +1,4 @@
+import { translate as tr, useTranslation as useSystemTranslation } from '../i18n';
 import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Folder, Edit2, Trash2, ChevronRight } from 'lucide-react-native';
@@ -18,6 +19,7 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
   onDelete,
 }) => {
   const { colors, isDark } = useThemeStore();
+  const { locale } = useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   return (
@@ -54,15 +56,15 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({
 
       <Text style={styles.title}>{workspace.name}</Text>
       <Text style={styles.description} numberOfLines={2}>
-        {workspace.description || 'Chưa có mô tả chi tiết cho workspace này.'}
+        {workspace.description || tr("Chưa có mô tả chi tiết cho workspace này.")}
       </Text>
 
       <View style={styles.footer}>
         <Text style={styles.dateText}>
-          Tạo: {new Date(workspace.createdAt).toLocaleDateString('vi-VN')}
+          {tr("Tạo:")}{' '}{new Date(workspace.createdAt).toLocaleDateString(locale)}
         </Text>
         <View style={styles.goBtn}>
-          <Text style={styles.goText}>Vào Workspace</Text>
+          <Text style={styles.goText}>{tr("Vào Workspace")}</Text>
           <ChevronRight size={14} color={colors.text} />
         </View>
       </View>

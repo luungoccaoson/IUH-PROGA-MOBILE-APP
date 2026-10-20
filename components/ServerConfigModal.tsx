@@ -1,3 +1,4 @@
+import { useTranslation } from '../i18n';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
@@ -18,6 +19,7 @@ interface ServerConfigModalProps {
 
 export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({ visible, onClose }) => {
   const { colors, isDark } = useThemeStore();
+  const { t } = useTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [apiUrl, setApiUrl] = useState('');
@@ -55,15 +57,14 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({ visible, o
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <Server size={20} color={colors.primary} />
-              <Text style={styles.title}>Cấu Hình Server Backend IP</Text>
+              <Text style={styles.title}>{t("Cấu Hình Server Backend IP")}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X size={20} color={colors.subText} />
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.desc}>
-            Khi chạy Expo Go trên điện thoại di động, bạn cần kết nối đến IP máy tính chạy Backend (ví dụ:{' '}
+          <Text style={styles.desc}>{t("Khi chạy Expo Go trên điện thoại di động, bạn cần kết nối đến IP máy tính chạy Backend (ví dụ:")}{' '}
             <Text style={styles.boldText}>http://192.168.1.X:8080/api/v1</Text>).
           </Text>
 
@@ -72,21 +73,21 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({ visible, o
               style={styles.detectedBox}
               onPress={() => setApiUrl(detectedIp)}
             >
-              <Text style={styles.detectedTitle}>📍 Đã phát hiện IP từ Expo Go:</Text>
+              <Text style={styles.detectedTitle}>{t("📍 Đã phát hiện IP từ Expo Go:")}</Text>
               <Text style={styles.detectedUrl}>{detectedIp}</Text>
-              <Text style={styles.detectedHint}>(Nhấp vào đây để áp dụng URL này)</Text>
+              <Text style={styles.detectedHint}>{t("(Nhấp vào đây để áp dụng URL này)")}</Text>
             </TouchableOpacity>
           )}
 
           {savedSuccess && (
             <View style={styles.successBox}>
               <CheckCircle2 size={16} color={colors.successText} />
-              <Text style={styles.successText}>Đã lưu URL Server thành công!</Text>
+              <Text style={styles.successText}>{t("Đã lưu URL Server thành công!")}</Text>
             </View>
           )}
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>SERVER URL GATEWAY</Text>
+            <Text style={styles.label}>{t("SERVER URL GATEWAY")}</Text>
             <TextInput
               style={styles.input}
               value={apiUrl}
@@ -100,11 +101,11 @@ export const ServerConfigModal: React.FC<ServerConfigModalProps> = ({ visible, o
           <View style={styles.actions}>
             <TouchableOpacity style={styles.resetBtn} onPress={handleReset}>
               <RefreshCw size={14} color={colors.subText} />
-              <Text style={styles.resetText}>Mặc định</Text>
+              <Text style={styles.resetText}>{t("Mặc định")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-              <Text style={styles.saveText}>LƯU CẤU HÌNH</Text>
+              <Text style={styles.saveText}>{t("LƯU CẤU HÌNH")}</Text>
             </TouchableOpacity>
           </View>
         </View>

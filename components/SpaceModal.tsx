@@ -1,3 +1,4 @@
+import { translate as tr, useTranslation as useSystemTranslation } from '../i18n';
 import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { X, Trash2 } from 'lucide-react-native';
@@ -20,6 +21,7 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
   spaceToEdit,
 }) => {
   const { colors, isDark } = useThemeStore();
+  useSystemTranslation();
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -41,7 +43,7 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      setError('Vui lòng nhập tên Space');
+      setError("Vui lòng nhập tên Space");
       return;
     }
     try {
@@ -50,7 +52,7 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
       await onSubmit(name.trim(), startDate ? `${startDate}T00:00:00` : undefined, endDate ? `${endDate}T23:59:59` : undefined);
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Không thể lưu Space.');
+      setError("Không thể lưu Space.");
     } finally {
       setLoading(false);
     }
@@ -64,7 +66,7 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
       await onDelete();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Không thể xóa Space.');
+      setError("Không thể xóa Space.");
     } finally {
       setLoading(false);
     }
@@ -76,7 +78,7 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
         <View style={[styles.modalCard, { backgroundColor: colors.cardBg, borderColor: colors.cardBorder }]}>
           <View style={styles.header}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
-              {spaceToEdit ? 'Cài đặt Space' : 'Tạo Space Mới'}
+              {spaceToEdit ? tr("Cài đặt Space") : tr("Tạo Space Mới")}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X size={20} color={colors.subText} />
@@ -85,12 +87,12 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
 
           {!!error && (
             <View style={[styles.errorBox, { backgroundColor: colors.dangerBg, borderColor: colors.dangerText }]}>
-              <Text style={[styles.errorText, { color: colors.dangerText }]}>{error}</Text>
+              <Text style={[styles.errorText, { color: colors.dangerText }]}>{tr(error)}</Text>
             </View>
           )}
 
           <View style={styles.formGroup}>
-            <Text style={[styles.label, { color: colors.subText }]}>TÊN SPACE</Text>
+            <Text style={[styles.label, { color: colors.subText }]}>{tr("TÊN SPACE")}</Text>
             <TextInput
               style={[
                 styles.input,
@@ -100,7 +102,7 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
                   color: colors.text,
                 },
               ]}
-              placeholder="Ví dụ: Phòng HR"
+              placeholder={tr("Ví dụ: Phòng HR")}
               placeholderTextColor={colors.mutedText}
               value={name}
               onChangeText={setName}
@@ -109,7 +111,7 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
 
           <View style={styles.row}>
             <View style={[styles.formGroup, { flex: 1 }]}>
-              <Text style={[styles.label, { color: colors.subText }]}>NGÀY BẮT ĐẦU (YYYY-MM-DD)</Text>
+              <Text style={[styles.label, { color: colors.subText }]}>{tr("NGÀY BẮT ĐẦU (YYYY-MM-DD)")}</Text>
               <TextInput
                 style={[
                   styles.input,
@@ -126,7 +128,7 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
               />
             </View>
             <View style={[styles.formGroup, { flex: 1 }]}>
-              <Text style={[styles.label, { color: colors.subText }]}>NGÀY KẾT THÚC (YYYY-MM-DD)</Text>
+              <Text style={[styles.label, { color: colors.subText }]}>{tr("NGÀY KẾT THÚC (YYYY-MM-DD)")}</Text>
               <TextInput
                 style={[
                   styles.input,
@@ -158,7 +160,7 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
                 disabled={loading}
               >
                 <Trash2 size={16} color={colors.dangerText} />
-                <Text style={[styles.deleteText, { color: colors.dangerText }]}>XÓA SPACE NÀY</Text>
+                <Text style={[styles.deleteText, { color: colors.dangerText }]}>{tr("XÓA SPACE NÀY")}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -175,7 +177,7 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
               onPress={onClose}
               disabled={loading}
             >
-              <Text style={[styles.cancelText, { color: colors.subText }]}>HỦY</Text>
+              <Text style={[styles.cancelText, { color: colors.subText }]}>{tr("HỦY")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -187,7 +189,7 @@ export const SpaceModal: React.FC<SpaceModalProps> = ({
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <Text style={styles.submitText}>
-                  {spaceToEdit ? 'LƯU THAY ĐỔI' : 'TẠO MỚI'}
+                  {spaceToEdit ? tr("LƯU THAY ĐỔI") : tr("TẠO MỚI")}
                 </Text>
               )}
             </TouchableOpacity>

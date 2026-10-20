@@ -1,3 +1,4 @@
+import { systemLabel, translate as tr, useTranslation as useSystemTranslation } from '../i18n';
 import React, { useState, useMemo } from 'react';
 import {
   Modal,
@@ -30,6 +31,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   onSubmit,
 }) => {
   const { colors, isDark } = useThemeStore();
+  useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [title, setTitle] = useState('');
@@ -42,7 +44,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      setError('Vui lòng nhập tiêu đề task');
+      setError("Vui lòng nhập tiêu đề task");
       return;
     }
     try {
@@ -62,7 +64,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       setDueDate('');
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Không thể tạo task mới.');
+      setError("Không thể tạo task mới.");
     } finally {
       setLoading(false);
     }
@@ -73,7 +75,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       <View style={styles.overlay}>
         <View style={styles.modalCard}>
           <View style={styles.header}>
-            <Text style={styles.modalTitle}>Tạo Công Việc Mới</Text>
+            <Text style={styles.modalTitle}>{tr("Tạo Công Việc Mới")}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X size={20} color={colors.subText} />
             </TouchableOpacity>
@@ -81,15 +83,15 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
           {!!error && (
             <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
+              <Text style={styles.errorText}>{tr(error)}</Text>
             </View>
           )}
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>TIÊU ĐỀ TASK *</Text>
+            <Text style={styles.label}>{tr("TIÊU ĐỀ TASK *")}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Nhập tên nhiệm vụ..."
+              placeholder={tr("Nhập tên nhiệm vụ...")}
               placeholderTextColor={colors.mutedText}
               value={title}
               onChangeText={setTitle}
@@ -97,10 +99,10 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>MÔ TẢ CHI TIẾT</Text>
+            <Text style={styles.label}>{tr("MÔ TẢ CHI TIẾT")}</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="Nội dung thực hiện..."
+              placeholder={tr("Nội dung thực hiện...")}
               placeholderTextColor={colors.mutedText}
               multiline
               numberOfLines={3}
@@ -112,11 +114,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
           {/* Priority selector */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>ĐỘ ƯU TIÊN</Text>
+            <Text style={styles.label}>{tr("ĐỘ ƯU TIÊN")}</Text>
             <View style={styles.optionRow}>
               {(['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as TaskPriority[]).map((p) => (
                 <TouchableOpacity
-                  key={p}
+                  key={systemLabel(p)}
                   style={[
                     styles.optionChip,
                     priority === p && styles.optionChipActive,
@@ -129,7 +131,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                       priority === p && styles.optionChipTextActive,
                     ]}
                   >
-                    {p}
+                    {systemLabel(p)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -138,11 +140,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
           {/* Status selector */}
           <View style={styles.formGroup}>
-            <Text style={styles.label}>TRẠNG THÁI BAN ĐẦU</Text>
+            <Text style={styles.label}>{tr("TRẠNG THÁI BAN ĐẦU")}</Text>
             <View style={styles.optionRow}>
               {(['TODO', 'IN_PROGRESS', 'DONE'] as TaskStatus[]).map((s) => (
                 <TouchableOpacity
-                  key={s}
+                  key={systemLabel(s)}
                   style={[
                     styles.optionChip,
                     status === s && styles.optionChipActive,
@@ -155,7 +157,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                       status === s && styles.optionChipTextActive,
                     ]}
                   >
-                    {s}
+                    {systemLabel(s)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -163,7 +165,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>HẠN HOÀN THÀNH (YYYY-MM-DD)</Text>
+            <Text style={styles.label}>{tr("HẠN HOÀN THÀNH (YYYY-MM-DD)")}</Text>
             <TextInput
               style={styles.input}
               placeholder="2026-08-30"
@@ -175,14 +177,14 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
           <View style={styles.actions}>
             <TouchableOpacity style={styles.cancelBtn} onPress={onClose} disabled={loading}>
-              <Text style={styles.cancelText}>HỦY</Text>
+              <Text style={styles.cancelText}>{tr("HỦY")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={loading}>
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Text style={styles.submitText}>TẠO TASK</Text>
+                <Text style={styles.submitText}>{tr("TẠO TASK")}</Text>
               )}
             </TouchableOpacity>
           </View>

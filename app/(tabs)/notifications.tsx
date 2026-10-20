@@ -1,3 +1,4 @@
+import { translate as tr, useTranslation as useSystemTranslation } from '../../i18n';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
@@ -32,6 +33,7 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { colors, isDark } = useThemeStore();
+  const { locale } = useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [pendingWorkspaces, setPendingWorkspaces] = useState<Workspace[]>([]);
@@ -68,12 +70,12 @@ export default function NotificationsScreen() {
       setProcessingId(ws.id);
       await workspaceService.acceptInvitation(ws.id, user.id);
       Alert.alert(
-        'Thành công',
-        `Bạn đã chấp nhận lời mời tham gia workspace "${ws.name}". Workspace này đã xuất hiện trong danh sách "Đang tham gia" ở trang chủ.`
+        tr("Thành công"),
+        tr("Bạn đã chấp nhận lời mời tham gia workspace \"{0}\". Workspace này đã xuất hiện trong danh sách \"Đang tham gia\" ở trang chủ.", { 0: ws.name })
       );
       setPendingWorkspaces((prev) => prev.filter((item) => item.id !== ws.id));
     } catch (err: any) {
-      Alert.alert('Lỗi', 'Không thể chấp nhận lời mời. Vui lòng thử lại sau.');
+      Alert.alert(tr("Lỗi"), tr("Không thể chấp nhận lời mời. Vui lòng thử lại sau."));
     } finally {
       setProcessingId(null);
     }
@@ -82,12 +84,12 @@ export default function NotificationsScreen() {
   const handleDecline = async (ws: Workspace) => {
     if (!user?.id) return;
     Alert.alert(
-      'Xác nhận từ chối',
-      `Bạn có chắc chắn muốn từ chối lời mời tham gia workspace "${ws.name}"?`,
+      tr("Xác nhận từ chối"),
+      tr("Bạn có chắc chắn muốn từ chối lời mời tham gia workspace \"{0}\"?", { 0: ws.name }),
       [
-        { text: 'Hủy', style: 'cancel' },
+        { text: tr("Hủy"), style: 'cancel' },
         {
-          text: 'Từ chối',
+          text: tr("Từ chối"),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -95,7 +97,7 @@ export default function NotificationsScreen() {
               await workspaceService.declineInvitation(ws.id, user.id);
               setPendingWorkspaces((prev) => prev.filter((item) => item.id !== ws.id));
             } catch (err) {
-              Alert.alert('Lỗi', 'Không thể từ chối lời mời.');
+              Alert.alert(tr("Lỗi"), tr("Không thể từ chối lời mời."));
             } finally {
               setProcessingId(null);
             }
@@ -111,7 +113,7 @@ export default function NotificationsScreen() {
       <View style={styles.container}>
         {/* Header */}
         <JiraHeader
-          title="Thông báo"
+          title={tr("Thông báo")}
           rightActions={
             <>
               <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
@@ -145,8 +147,7 @@ export default function NotificationsScreen() {
                   filter === 'all' && styles.filterPillTextActive,
                 ]}
               >
-                Tất cả
-              </Text>
+                {tr("Tất cả")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -165,7 +166,7 @@ export default function NotificationsScreen() {
                   pendingWorkspaces.length > 0 && styles.filterPillBadgeText,
                 ]}
               >
-                Lời mời ({pendingWorkspaces.length})
+                {tr("Lời mời (")}{pendingWorkspaces.length})
               </Text>
             </TouchableOpacity>
           </View>
@@ -195,22 +196,21 @@ export default function NotificationsScreen() {
           {loading ? (
             <View style={styles.centerContainer}>
               <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={styles.loadingText}>Đang tải thông báo...</Text>
+              <Text style={styles.loadingText}>{tr("Đang tải thông báo...")}</Text>
             </View>
           ) : pendingWorkspaces.length === 0 ? (
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconCircle}>
                 <CheckCircle2 size={40} color={colors.primary} />
               </View>
-              <Text style={styles.emptyTitle}>Không có lời mời nào</Text>
+              <Text style={styles.emptyTitle}>{tr("Không có lời mời nào")}</Text>
               <Text style={styles.emptySubtitle}>
-                Bạn chưa có lời mời tham gia workspace nào mới. Lời mời từ trang web sẽ hiển thị ngay tại đây.
-              </Text>
+                {tr("Bạn chưa có lời mời tham gia workspace nào mới. Lời mời từ trang web sẽ hiển thị ngay tại đây.")}</Text>
             </View>
           ) : (
             <View style={styles.invitationList}>
               <Text style={styles.sectionHeader}>
-                Lời mời tham gia Workspace ({pendingWorkspaces.length})
+                {tr("Lời mời tham gia Workspace (")}{pendingWorkspaces.length})
               </Text>
 
               {pendingWorkspaces.map((ws) => {
@@ -223,19 +223,18 @@ export default function NotificationsScreen() {
                       </View>
                       <View style={styles.cardHeaderInfo}>
                         <Text style={styles.inviteCategory}>
-                          LỜI MỜI THAM GIA WORKSPACE
-                        </Text>
+                          {tr("LỜI MỜI THAM GIA WORKSPACE")}</Text>
                         <Text style={styles.workspaceName}>{ws.name}</Text>
                       </View>
                     </View>
 
                     <Text style={styles.inviteDesc}>
                       {ws.description ||
-                        'Bạn nhận được lời mời tham gia làm thành viên để cùng theo dõi và phát triển các không gian dự án.'}
+                        tr("Bạn nhận được lời mời tham gia làm thành viên để cùng theo dõi và phát triển các không gian dự án.")}
                     </Text>
 
                     <Text style={styles.inviteTime}>
-                      Nhận lời mời ngày: {new Date(ws.createdAt).toLocaleDateString('vi-VN')}
+                      {tr("Nhận lời mời ngày:")}{' '}{new Date(ws.createdAt).toLocaleDateString(locale)}
                     </Text>
 
                     {/* Actions */}
@@ -247,7 +246,7 @@ export default function NotificationsScreen() {
                         activeOpacity={0.8}
                       >
                         <X size={15} color="#F87171" style={{ marginRight: 4 }} />
-                        <Text style={styles.btnDeclineText}>Từ chối</Text>
+                        <Text style={styles.btnDeclineText}>{tr("Từ chối")}</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
@@ -261,7 +260,7 @@ export default function NotificationsScreen() {
                         ) : (
                           <>
                             <Check size={15} color="#FFFFFF" style={{ marginRight: 4 }} />
-                            <Text style={styles.btnAcceptText}>Chấp nhận</Text>
+                            <Text style={styles.btnAcceptText}>{tr("Chấp nhận")}</Text>
                           </>
                         )}
                       </TouchableOpacity>

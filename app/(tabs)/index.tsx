@@ -1,3 +1,4 @@
+import { translate as tr, useTranslation as useSystemTranslation } from '../../i18n';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
@@ -44,6 +45,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { colors, isDark } = useThemeStore();
+  const { locale } = useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [activeTab, setActiveTab] = useState<'all' | 'owned' | 'joined'>('all');
@@ -164,19 +166,19 @@ export default function HomeScreen() {
     switch (status) {
       case 'DONE':
         return {
-          label: 'Hoàn thành',
+          label: tr("Hoàn thành"),
           bg: isDark ? '#0D3823' : '#E3FCEF',
           text: isDark ? '#36B37E' : '#006644',
         };
       case 'IN_PROGRESS':
         return {
-          label: 'Đang làm',
+          label: tr("Đang làm"),
           bg: isDark ? '#43290F' : '#FFF0B3',
           text: isDark ? '#F59E0B' : '#B76E00',
         };
       default:
         return {
-          label: 'Cần làm',
+          label: tr("Cần làm"),
           bg: isDark ? '#1D3B6A' : '#DEEBFF',
           text: isDark ? '#579DFF' : '#0052CC',
         };
@@ -217,7 +219,7 @@ export default function HomeScreen() {
             <Search size={18} color={colors.subText} style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Tìm kiếm workspace, space, task..."
+              placeholder={tr("Tìm kiếm workspace, space, task...")}
               placeholderTextColor={colors.subText}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -237,15 +239,15 @@ export default function HomeScreen() {
           {loading ? (
             <View style={styles.centerContainer}>
               <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+              <Text style={styles.loadingText}>{tr("Đang tải dữ liệu...")}</Text>
             </View>
           ) : isSearching ? (
             /* ================= SEARCH RESULTS VIEW ================= */
             <View style={styles.searchResultsContainer}>
               <View style={styles.searchHeaderRow}>
-                <Text style={styles.searchResultsTitle}>Kết quả tìm kiếm</Text>
+                <Text style={styles.searchResultsTitle}>{tr("Kết quả tìm kiếm")}</Text>
                 <View style={styles.matchCountBadge}>
-                  <Text style={styles.matchCountText}>{totalMatches} kết quả</Text>
+                  <Text style={styles.matchCountText}>{totalMatches} {tr("kết quả")}</Text>
                 </View>
               </View>
 
@@ -254,9 +256,9 @@ export default function HomeScreen() {
                   <View style={styles.emptyIconCircle}>
                     <Search size={32} color="#8C9BAB" />
                   </View>
-                  <Text style={styles.emptyTitle}>Không tìm thấy kết quả</Text>
+                  <Text style={styles.emptyTitle}>{tr("Không tìm thấy kết quả")}</Text>
                   <Text style={styles.emptySubtitle}>
-                    Không có workspace, không gian hay công việc nào khớp với "{searchQuery}"
+                    {tr('Không có workspace, không gian hay công việc nào khớp với "{query}"', { query: searchQuery })}
                   </Text>
                 </View>
               ) : (
@@ -267,7 +269,7 @@ export default function HomeScreen() {
                       <View style={styles.searchGroupHeader}>
                         <Folder size={16} color="#579DFF" />
                         <Text style={styles.searchGroupTitle}>
-                          Workspace ({searchedWorkspaces.length})
+                          {tr("Workspace (")}{searchedWorkspaces.length})
                         </Text>
                       </View>
                       <View style={styles.searchCardGroup}>
@@ -306,7 +308,7 @@ export default function HomeScreen() {
                                         w.isOwner ? styles.roleTextOwned : styles.roleTextJoined
                                       }
                                     >
-                                      {w.isOwner ? 'Của tôi' : 'Đang tham gia'}
+                                      {w.isOwner ? tr("Của tôi") : tr("Đang tham gia")}
                                     </Text>
                                   </View>
                                 </View>
@@ -330,7 +332,7 @@ export default function HomeScreen() {
                       <View style={styles.searchGroupHeader}>
                         <JiraSlidersIcon size={16} color="#E65100" />
                         <Text style={styles.searchGroupTitle}>
-                          Không gian ({searchedSpaces.length})
+                          {tr("Không gian (")}{searchedSpaces.length})
                         </Text>
                       </View>
                       <View style={styles.searchCardGroup}>
@@ -361,7 +363,7 @@ export default function HomeScreen() {
                                   {sp.name}
                                 </Text>
                                 <Text style={styles.itemBreadcrumb} numberOfLines={1}>
-                                  Thuộc Workspace: {sp.workspaceName}
+                                  {tr("Thuộc Workspace:")}{sp.workspaceName}
                                 </Text>
                               </View>
                               <ChevronRight size={18} color="#8C9BAB" />
@@ -378,7 +380,7 @@ export default function HomeScreen() {
                       <View style={styles.searchGroupHeader}>
                         <CheckSquare size={16} color="#36B37E" />
                         <Text style={styles.searchGroupTitle}>
-                          Công việc ({searchedTasks.length})
+                          {tr("Công việc (")}{searchedTasks.length})
                         </Text>
                       </View>
                       <View style={styles.searchCardGroup}>
@@ -442,7 +444,7 @@ export default function HomeScreen() {
               {/* Quick Access Spaces Row */}
               {allSpacesList.length > 0 && (
                 <View style={styles.spacesSection}>
-                  <Text style={styles.sectionTitle}>Không gian (Spaces) liên quan</Text>
+                  <Text style={styles.sectionTitle}>{tr("Không gian (Spaces) liên quan")}</Text>
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -493,7 +495,7 @@ export default function HomeScreen() {
                       activeTab === 'all' && styles.segmentTextActive,
                     ]}
                   >
-                    Tất cả ({allWorkspaces.length})
+                    {tr("Tất cả (")}{allWorkspaces.length})
                   </Text>
                 </TouchableOpacity>
 
@@ -511,7 +513,7 @@ export default function HomeScreen() {
                       activeTab === 'owned' && styles.segmentTextActive,
                     ]}
                   >
-                    Của tôi ({ownedWorkspaces.length})
+                    {tr("Của tôi (")}{ownedWorkspaces.length})
                   </Text>
                 </TouchableOpacity>
 
@@ -529,7 +531,7 @@ export default function HomeScreen() {
                       activeTab === 'joined' && styles.segmentTextActive,
                     ]}
                   >
-                    Đang tham gia ({joinedWorkspaces.length})
+                    {tr("Đang tham gia (")}{joinedWorkspaces.length})
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -542,15 +544,15 @@ export default function HomeScreen() {
                   </View>
                   <Text style={styles.emptyTitle}>
                     {activeTab === 'owned'
-                      ? 'Bạn chưa tạo Workspace nào'
+                      ? tr("Bạn chưa tạo Workspace nào")
                       : activeTab === 'joined'
-                      ? 'Chưa tham gia Workspace nào'
-                      : 'Chưa có Workspace nào'}
+                      ? tr("Chưa tham gia Workspace nào")
+                      : tr("Chưa có Workspace nào")}
                   </Text>
                   <Text style={styles.emptySubtitle}>
                     {activeTab === 'joined'
-                      ? 'Khi bạn được mời tham gia Workspace từ các thành viên khác, hãy kiểm tra tab Thông báo để chấp nhận.'
-                      : 'Bắt đầu bằng cách tạo Workspace đầu tiên để quản lý dự án và các thành viên.'}
+                      ? tr("Khi bạn được mời tham gia Workspace từ các thành viên khác, hãy kiểm tra tab Thông báo để chấp nhận.")
+                      : tr("Bắt đầu bằng cách tạo Workspace đầu tiên để quản lý dự án và các thành viên.")}
                   </Text>
                   <TouchableOpacity
                     style={styles.emptyActionBtn}
@@ -558,7 +560,7 @@ export default function HomeScreen() {
                     activeOpacity={0.8}
                   >
                     <FolderPlus size={16} color="#FFFFFF" />
-                    <Text style={styles.emptyActionBtnText}>Tạo Workspace mới</Text>
+                    <Text style={styles.emptyActionBtnText}>{tr("Tạo Workspace mới")}</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -592,22 +594,22 @@ export default function HomeScreen() {
                           {w.isOwner ? (
                             <View style={styles.roleBadgeOwned}>
                               <Crown size={10} color="#579DFF" style={{ marginRight: 3 }} />
-                              <Text style={styles.roleTextOwned}>Của tôi</Text>
+                              <Text style={styles.roleTextOwned}>{tr("Của tôi")}</Text>
                             </View>
                           ) : (
                             <View style={styles.roleBadgeJoined}>
                               <Users size={10} color="#57D9A3" style={{ marginRight: 3 }} />
-                              <Text style={styles.roleTextJoined}>Đang tham gia</Text>
+                              <Text style={styles.roleTextJoined}>{tr("Đang tham gia")}</Text>
                             </View>
                           )}
                         </View>
 
                         <Text style={styles.wsDesc} numberOfLines={2}>
-                          {w.description || 'Không gian làm việc nhóm'}
+                          {w.description || tr("Không gian làm việc nhóm")}
                         </Text>
 
                         <Text style={styles.wsDate}>
-                          Tạo ngày: {new Date(w.createdAt).toLocaleDateString('vi-VN')}
+                          {tr("Tạo ngày:")}{' '}{new Date(w.createdAt).toLocaleDateString(locale)}
                         </Text>
                       </View>
 

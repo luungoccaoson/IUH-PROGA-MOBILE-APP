@@ -1,3 +1,4 @@
+import { translate as tr, useTranslation as useSystemTranslation } from '../i18n';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
@@ -34,6 +35,7 @@ export const AddSpaceMemberModal: React.FC<AddSpaceMemberModalProps> = ({
   onMemberAdded,
 }) => {
   const { colors, isDark } = useThemeStore();
+  useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [candidates, setCandidates] = useState<User[]>([]);
@@ -75,11 +77,11 @@ export const AddSpaceMemberModal: React.FC<AddSpaceMemberModalProps> = ({
     try {
       setAddingId(userId);
       await workspaceService.addMemberToSpace(spaceId, userId, 3);
-      Alert.alert('Thành công', 'Đã thêm thành viên vào Không gian.');
+      Alert.alert(tr("Thành công"), tr("Đã thêm thành viên vào Không gian."));
       setCandidates((prev) => prev.filter((c) => c.id !== userId));
       onMemberAdded();
     } catch (err: any) {
-      Alert.alert('Lỗi', err.response?.data?.message || 'Không thể thêm thành viên.');
+      Alert.alert(tr("Lỗi"), tr("Không thể thêm thành viên."));
     } finally {
       setAddingId(null);
     }
@@ -112,7 +114,7 @@ export const AddSpaceMemberModal: React.FC<AddSpaceMemberModalProps> = ({
           <View style={styles.header}>
             <View style={styles.headerTitleWrap}>
               <UserPlus size={20} color={colors.primary} style={{ marginRight: 8 }} />
-              <Text style={styles.title}>Thêm thành viên vào Không gian</Text>
+              <Text style={styles.title}>{tr("Thêm thành viên vào Không gian")}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X size={20} color={colors.subText} />
@@ -124,7 +126,7 @@ export const AddSpaceMemberModal: React.FC<AddSpaceMemberModalProps> = ({
             <Search size={16} color={colors.subText} style={{ marginRight: 8 }} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Tìm theo tên thành viên, email..."
+              placeholder={tr("Tìm theo tên thành viên, email...")}
               placeholderTextColor={colors.mutedText}
               value={search}
               onChangeText={setSearch}
@@ -136,14 +138,14 @@ export const AddSpaceMemberModal: React.FC<AddSpaceMemberModalProps> = ({
             {loading ? (
               <View style={styles.centerBox}>
                 <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={styles.loadingText}>Đang tải danh sách thành viên...</Text>
+                <Text style={styles.loadingText}>{tr("Đang tải danh sách thành viên...")}</Text>
               </View>
             ) : filtered.length === 0 ? (
               <View style={styles.centerBox}>
                 <Text style={styles.emptyText}>
                   {candidates.length === 0
-                    ? 'Tất cả thành viên Workspace đã có trong Không gian này.'
-                    : 'Không tìm thấy thành viên phù hợp.'}
+                    ? tr("Tất cả thành viên Workspace đã có trong Không gian này.")
+                    : tr("Không tìm thấy thành viên phù hợp.")}
                 </Text>
               </View>
             ) : (
@@ -177,7 +179,7 @@ export const AddSpaceMemberModal: React.FC<AddSpaceMemberModalProps> = ({
                       ) : (
                         <>
                           <UserPlus size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
-                          <Text style={styles.addBtnText}>Thêm</Text>
+                          <Text style={styles.addBtnText}>{tr("Thêm")}</Text>
                         </>
                       )}
                     </TouchableOpacity>

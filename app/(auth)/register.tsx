@@ -1,3 +1,5 @@
+import { LanguageSelector } from '../../components/LanguageSelector';
+import { useTranslation } from '../../i18n';
 import React, { useState } from 'react';
 import {
   View,
@@ -22,18 +24,19 @@ export default function RegisterScreen() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
   const { colors, isDark, toggleTheme } = useThemeStore();
+  const { t } = useTranslation();
 
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState<import('../../i18n').TranslationKey | ''>('');
   const [isNetworkError, setIsNetworkError] = useState(false);
   const [configModalVisible, setConfigModalVisible] = useState(false);
 
   const handleRegister = async () => {
     if (!username.trim() || !email.trim() || !password.trim()) {
-      setErrorMsg('Vui lòng điền đầy đủ các thông tin.');
+      setErrorMsg("Vui lòng điền đầy đủ các thông tin.");
       setIsNetworkError(false);
       return;
     }
@@ -54,11 +57,11 @@ export default function RegisterScreen() {
       console.error(err);
       if (err.message === 'Network Error' || !err.response) {
         setIsNetworkError(true);
-        setErrorMsg('Không thể kết nối đến Backend Server (Lỗi Network Error). Vui lòng nhấn nút Cấu hình IP bên dưới để cập nhật lại IP máy tính.');
+        setErrorMsg("Không thể kết nối đến Backend Server (Lỗi Network Error). Vui lòng nhấn nút Cấu hình IP bên dưới để cập nhật lại IP máy tính.");
       } else {
         setIsNetworkError(false);
         setErrorMsg(
-          err.response?.data?.message || 'Đăng ký thất bại. Email hoặc Username có thể đã tồn tại.'
+          "Đăng ký thất bại. Email hoặc Username có thể đã tồn tại."
         );
       }
     } finally {
@@ -77,6 +80,7 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Top Action Bar with Theme Toggle */}
+        <LanguageSelector />
         <View style={styles.topActionRow}>
           <TouchableOpacity
             style={[
@@ -92,12 +96,12 @@ export default function RegisterScreen() {
             {isDark ? (
               <>
                 <Sun size={15} color="#FBBF24" />
-                <Text style={[styles.themeToggleText, { color: colors.text }]}>Giao diện Sáng</Text>
+                <Text style={[styles.themeToggleText, { color: colors.text }]}>{t("Giao diện Sáng")}</Text>
               </>
             ) : (
               <>
                 <Moon size={15} color="#6366F1" />
-                <Text style={[styles.themeToggleText, { color: colors.text }]}>Giao diện Tối</Text>
+                <Text style={[styles.themeToggleText, { color: colors.text }]}>{t("Giao diện Tối")}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -118,22 +122,20 @@ export default function RegisterScreen() {
               <Sparkles size={24} color={isDark ? '#579DFF' : '#0052CC'} />
             </View>
             <Text style={[styles.brandTitle, { color: colors.text }]}>PROGA</Text>
-            <Text style={[styles.title, { color: colors.text }]}>Đăng Ký Tài Khoản</Text>
-            <Text style={[styles.subtitle, { color: colors.subText }]}>
-              Tạo tài khoản mới để trải nghiệm hệ sinh thái AI Project Management
-            </Text>
+            <Text style={[styles.title, { color: colors.text }]}>{t("Đăng Ký Tài Khoản")}</Text>
+            <Text style={[styles.subtitle, { color: colors.subText }]}>{t("Tạo tài khoản mới để trải nghiệm hệ sinh thái AI Project Management")}</Text>
           </View>
 
           {!!errorMsg && (
             <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{errorMsg}</Text>
+              <Text style={styles.errorText}>{errorMsg ? t(errorMsg) : ''}</Text>
               {isNetworkError && (
                 <TouchableOpacity
                   style={styles.configErrorBtn}
                   onPress={() => setConfigModalVisible(true)}
                 >
                   <Server size={14} color="#FFFFFF" />
-                  <Text style={styles.configErrorBtnText}>⚙️ Cấu Hình IP Server Ngay</Text>
+                  <Text style={styles.configErrorBtnText}>{t("⚙️ Cấu Hình IP Server Ngay")}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -142,7 +144,7 @@ export default function RegisterScreen() {
           {/* Form */}
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.subText }]}>TÊN HIỂN THỊ (USERNAME)</Text>
+              <Text style={[styles.label, { color: colors.subText }]}>{t("TÊN HIỂN THỊ (USERNAME)")}</Text>
               <View
                 style={[
                   styles.inputWrapper,
@@ -162,7 +164,7 @@ export default function RegisterScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.subText }]}>EMAIL CÁ NHÂN / CÔNG VIỆC</Text>
+              <Text style={[styles.label, { color: colors.subText }]}>{t("EMAIL CÁ NHÂN / CÔNG VIỆC")}</Text>
               <View
                 style={[
                   styles.inputWrapper,
@@ -183,7 +185,7 @@ export default function RegisterScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.subText }]}>MẬT KHẨU BẢO MẬT</Text>
+              <Text style={[styles.label, { color: colors.subText }]}>{t("MẬT KHẨU BẢO MẬT")}</Text>
               <View
                 style={[
                   styles.inputWrapper,
@@ -216,16 +218,16 @@ export default function RegisterScreen() {
               ) : (
                 <>
                   <UserPlus size={18} color="#FFFFFF" />
-                  <Text style={styles.registerBtnText}>TẠO TÀI KHOẢN</Text>
+                  <Text style={styles.registerBtnText}>{t("TẠO TÀI KHOẢN")}</Text>
                 </>
               )}
             </TouchableOpacity>
           </View>
 
           <View style={styles.footerLink}>
-            <Text style={[styles.footerText, { color: colors.subText }]}>Đã có tài khoản? </Text>
+            <Text style={[styles.footerText, { color: colors.subText }]}>{t("Đã có tài khoản? ")}</Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-              <Text style={[styles.linkText, { color: colors.primary }]}>Đăng nhập ngay</Text>
+              <Text style={[styles.linkText, { color: colors.primary }]}>{t("Đăng nhập ngay")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -241,9 +243,7 @@ export default function RegisterScreen() {
             onPress={() => setConfigModalVisible(true)}
           >
             <Server size={14} color={colors.subText} />
-            <Text style={[styles.serverConfigTriggerText, { color: colors.subText }]}>
-              Cấu hình IP Backend Server
-            </Text>
+            <Text style={[styles.serverConfigTriggerText, { color: colors.subText }]}>{t("Cấu hình IP Backend Server")}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

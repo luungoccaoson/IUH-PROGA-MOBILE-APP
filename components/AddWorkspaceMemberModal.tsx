@@ -1,3 +1,4 @@
+import { translate as tr, useTranslation as useSystemTranslation } from '../i18n';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
@@ -32,6 +33,7 @@ export const AddWorkspaceMemberModal: React.FC<AddWorkspaceMemberModalProps> = (
   onMemberInvited,
 }) => {
   const { colors, isDark } = useThemeStore();
+  useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [candidates, setCandidates] = useState<User[]>([]);
@@ -64,11 +66,11 @@ export const AddWorkspaceMemberModal: React.FC<AddWorkspaceMemberModalProps> = (
     try {
       setInvitingId(userId);
       await workspaceService.inviteMember(workspaceId, userId, 3);
-      Alert.alert('Thành công', `Đã gửi lời mời tham gia Workspace tới ${name}.`);
+      Alert.alert(tr("Thành công"), tr("Đã gửi lời mời tham gia Workspace tới {0}.", { 0: name }));
       setCandidates((prev) => prev.filter((c) => c.id !== userId));
       onMemberInvited();
     } catch (err: any) {
-      Alert.alert('Lỗi', err.response?.data?.message || 'Không thể gửi lời mời tham gia Workspace.');
+      Alert.alert(tr("Lỗi"), tr("Không thể gửi lời mời tham gia Workspace."));
     } finally {
       setInvitingId(null);
     }
@@ -101,7 +103,7 @@ export const AddWorkspaceMemberModal: React.FC<AddWorkspaceMemberModalProps> = (
           <View style={styles.header}>
             <View style={styles.headerTitleWrap}>
               <UserPlus size={20} color={colors.primary} style={{ marginRight: 8 }} />
-              <Text style={styles.title}>Thêm thành viên vào Workspace</Text>
+              <Text style={styles.title}>{tr("Thêm thành viên vào Workspace")}</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X size={20} color={colors.subText} />
@@ -113,7 +115,7 @@ export const AddWorkspaceMemberModal: React.FC<AddWorkspaceMemberModalProps> = (
             <Search size={16} color={colors.subText} style={{ marginRight: 8 }} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Tìm theo tên người dùng, email..."
+              placeholder={tr("Tìm theo tên người dùng, email...")}
               placeholderTextColor={colors.mutedText}
               value={search}
               onChangeText={setSearch}
@@ -125,14 +127,14 @@ export const AddWorkspaceMemberModal: React.FC<AddWorkspaceMemberModalProps> = (
             {loading ? (
               <View style={styles.centerBox}>
                 <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={styles.loadingText}>Đang tải người dùng hệ thống...</Text>
+                <Text style={styles.loadingText}>{tr("Đang tải người dùng hệ thống...")}</Text>
               </View>
             ) : filtered.length === 0 ? (
               <View style={styles.centerBox}>
                 <Text style={styles.emptyText}>
                   {candidates.length === 0
-                    ? 'Tất cả người dùng hệ thống đã có trong Workspace này.'
-                    : 'Không tìm thấy người dùng phù hợp.'}
+                    ? tr("Tất cả người dùng hệ thống đã có trong Workspace này.")
+                    : tr("Không tìm thấy người dùng phù hợp.")}
                 </Text>
               </View>
             ) : (
@@ -166,7 +168,7 @@ export const AddWorkspaceMemberModal: React.FC<AddWorkspaceMemberModalProps> = (
                       ) : (
                         <>
                           <UserPlus size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
-                          <Text style={styles.inviteBtnText}>Mời</Text>
+                          <Text style={styles.inviteBtnText}>{tr("Mời")}</Text>
                         </>
                       )}
                     </TouchableOpacity>

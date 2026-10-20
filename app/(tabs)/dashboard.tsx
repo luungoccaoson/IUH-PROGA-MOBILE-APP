@@ -1,3 +1,4 @@
+import { systemLabel, translate as tr, useTranslation as useSystemTranslation } from '../../i18n';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
@@ -22,6 +23,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { colors, isDark } = useThemeStore();
+  useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [assignedTasks, setAssignedTasks] = useState<
@@ -65,7 +67,7 @@ export default function DashboardScreen() {
       <StatusBar barStyle={colors.statusBar} backgroundColor={colors.headerBg} />
       <View style={styles.container}>
         {/* Header */}
-        <JiraHeader title="Bảng thông tin" />
+        <JiraHeader title={tr("Bảng thông tin")} />
 
         <ScrollView
           style={styles.content}
@@ -82,7 +84,7 @@ export default function DashboardScreen() {
           {/* Card: Assigned to Me */}
           <View style={styles.assignedCard}>
             <View style={styles.cardHeaderRow}>
-              <Text style={styles.assignedTitle}>Assigned to Me</Text>
+              <Text style={styles.assignedTitle}>{tr("Assigned to Me")}</Text>
               <TouchableOpacity
                 onPress={onRefresh}
                 style={styles.reloadBtn}
@@ -101,8 +103,7 @@ export default function DashboardScreen() {
             ) : assignedTasks.length === 0 ? (
               <View style={styles.assignedEmptyBox}>
                 <Text style={styles.assignedEmptyText}>
-                  Không tìm thấy hạng mục công việc phù hợp.
-                </Text>
+                  {tr("Không tìm thấy hạng mục công việc phù hợp.")}</Text>
               </View>
             ) : (
               <View style={styles.tasksList}>
@@ -129,7 +130,7 @@ export default function DashboardScreen() {
                         {task.title}
                       </Text>
                       <Text style={styles.taskMeta}>
-                        #{task.id} • {spaceName} • {task.status}
+                        #{task.id} • {spaceName} • {systemLabel(task.status)}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -140,7 +141,7 @@ export default function DashboardScreen() {
 
           {/* Section: Luồng hoạt động */}
           <View style={styles.activitySection}>
-            <Text style={styles.activitySectionTitle}>Luồng hoạt động</Text>
+            <Text style={styles.activitySectionTitle}>{tr("Luồng hoạt động")}</Text>
 
             <View style={styles.activityBox}>
               {loading ? (
@@ -153,15 +154,13 @@ export default function DashboardScreen() {
                 <View style={styles.emptyActivityBox}>
                   <Activity size={32} color="#8C9BAB" style={{ marginBottom: 10 }} />
                   <Text style={styles.emptyActivityTitle}>
-                    Chưa có hoạt động nào được ghi nhận
-                  </Text>
+                    {tr("Chưa có hoạt động nào được ghi nhận")}</Text>
                   <Text style={styles.emptyActivitySub}>
-                    Các cập nhật trạng thái và thay đổi công việc sẽ tự động hiển thị tại đây khi dự án hoạt động.
-                  </Text>
+                    {tr("Các cập nhật trạng thái và thay đổi công việc sẽ tự động hiển thị tại đây khi dự án hoạt động.")}</Text>
                 </View>
               ) : (
                 <View>
-                  <Text style={styles.dateGroupHeader}>Hoạt động gần đây</Text>
+                  <Text style={styles.dateGroupHeader}>{tr("Hoạt động gần đây")}</Text>
                   {assignedTasks.map(({ task, spaceName }) => (
                     <View key={task.id} style={styles.activityItem}>
                       <View style={styles.itemAvatar}>
@@ -169,7 +168,7 @@ export default function DashboardScreen() {
                       </View>
                       <View style={styles.itemDetails}>
                         <Text style={styles.itemMessage}>
-                          Đang xử lý nhiệm vụ "{task.title}" tại {spaceName}
+                          {tr('Đang xử lý nhiệm vụ "{title}" tại {space}', { title: task.title, space: spaceName })}
                         </Text>
                         <View style={styles.itemMetaRow}>
                           <View style={styles.issueKeyBadge}>
@@ -182,7 +181,7 @@ export default function DashboardScreen() {
                               style={{ marginRight: 4 }}
                             />
                             <Text style={styles.itemDateText}>
-                              {task.status}
+                              {systemLabel(task.status)}
                             </Text>
                           </View>
                         </View>

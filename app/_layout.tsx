@@ -1,3 +1,4 @@
+import { useLanguageStore } from '../stores/useLanguageStore';
 import React, { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -8,12 +9,14 @@ import { useThemeStore } from '../stores/useThemeStore';
 export default function RootLayout() {
   const { isAuthenticated, isLoading, loadAuthFromStorage } = useAuthStore();
   const { initTheme, isDark, colors } = useThemeStore();
+  const { ready: languageReady, initLanguage } = useLanguageStore();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     loadAuthFromStorage();
     initTheme();
+    void initLanguage();
   }, []);
 
   useEffect(() => {
@@ -30,7 +33,7 @@ export default function RootLayout() {
     }
   }, [isAuthenticated, isLoading, segments]);
 
-  if (isLoading) {
+  if (isLoading || !languageReady) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.bg }]}>
         <ActivityIndicator size="large" color={colors.primary} />

@@ -1,3 +1,4 @@
+import { translate as tr, useTranslation as useSystemTranslation } from '../../i18n';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
@@ -43,6 +44,7 @@ export default function SpacesScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { colors, isDark } = useThemeStore();
+  useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [items, setItems] = useState<SpaceItemView[]>([]);
@@ -197,7 +199,7 @@ export default function SpacesScreen() {
       <View style={styles.container}>
         {/* Jira Header */}
         <JiraHeader
-          title="Không gian"
+          title={tr("Không gian")}
           rightActions={
             <>
               <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
@@ -229,24 +231,23 @@ export default function SpacesScreen() {
           {loading ? (
             <View style={styles.centerContainer}>
               <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={styles.loadingText}>Đang tải không gian...</Text>
+              <Text style={styles.loadingText}>{tr("Đang tải không gian...")}</Text>
             </View>
           ) : items.length === 0 ? (
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconCircle}>
                 <Layers size={36} color="#579DFF" />
               </View>
-              <Text style={styles.emptyTitle}>Chưa có Không gian nào</Text>
+              <Text style={styles.emptyTitle}>{tr("Chưa có Không gian nào")}</Text>
               <Text style={styles.emptySubtitle}>
-                Bắt đầu bằng cách tạo Không gian làm việc đầu tiên để quản lý dự án cùng đội ngũ.
-              </Text>
+                {tr("Bắt đầu bằng cách tạo Không gian làm việc đầu tiên để quản lý dự án cùng đội ngũ.")}</Text>
               <TouchableOpacity
                 style={styles.emptyActionBtn}
                 onPress={() => setCreateWsModalVisible(true)}
                 activeOpacity={0.8}
               >
                 <FolderPlus size={16} color="#FFFFFF" />
-                <Text style={styles.emptyActionBtnText}>Tạo Không gian mới</Text>
+                <Text style={styles.emptyActionBtnText}>{tr("Tạo Không gian mới")}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -254,7 +255,7 @@ export default function SpacesScreen() {
               {/* Section: Đã xem gần đây */}
               {recentItems.length > 0 && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Đã xem gần đây</Text>
+                  <Text style={styles.sectionTitle}>{tr("Đã xem gần đây")}</Text>
                   <View style={styles.cardGroup}>
                     {recentItems.map((item, idx) => {
                       const favKey = `recent-${item.type}-${item.id}`;
@@ -297,7 +298,7 @@ export default function SpacesScreen() {
 
               {/* Section: Tất cả các không gian */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Tất cả các không gian</Text>
+                <Text style={styles.sectionTitle}>{tr("Tất cả các không gian")}</Text>
                 <View style={styles.cardGroup}>
                   {items.map((item, idx) => {
                     const favKey = `all-${item.type}-${item.id}`;

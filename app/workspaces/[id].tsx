@@ -1,3 +1,4 @@
+import { translate as tr, useTranslation as useSystemTranslation } from '../../i18n';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
@@ -50,6 +51,7 @@ export default function WorkspaceDetailScreen() {
   const router = useRouter();
   const workspaceId = parseInt(id as string, 10);
   const { colors, isDark } = useThemeStore();
+  const { locale } = useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -121,7 +123,7 @@ export default function WorkspaceDetailScreen() {
       }
     } catch (err: any) {
       console.error('Error loading workspace details:', err);
-      setError('Không thể tải thông tin Workspace.');
+      setError("Không thể tải thông tin Workspace.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -158,29 +160,29 @@ export default function WorkspaceDetailScreen() {
         ownerId: workspace.ownerId,
       });
       setWorkspace(updated);
-      Alert.alert('Thành công', 'Thông tin Workspace đã được cập nhật.');
+      Alert.alert(tr("Thành công"), tr("Thông tin Workspace đã được cập nhật."));
     } catch (e: any) {
-      Alert.alert('Lỗi', e.response?.data?.message || 'Không thể cập nhật thông tin Workspace.');
+      Alert.alert(tr("Lỗi"), tr("Không thể cập nhật thông tin Workspace."));
     }
   };
 
   const handleDeleteWorkspace = () => {
     if (!workspace) return;
     Alert.alert(
-      'Xác nhận xóa Workspace',
-      `Bạn có chắc chắn muốn xóa "${workspace.name}"? Toàn bộ các không gian và công việc bên trong sẽ bị xóa vĩnh viễn.`,
+      tr("Xác nhận xóa Workspace"),
+      tr("Bạn có chắc chắn muốn xóa \"{0}\"? Toàn bộ các không gian và công việc bên trong sẽ bị xóa vĩnh viễn.", { 0: workspace.name }),
       [
-        { text: 'Hủy', style: 'cancel' },
+        { text: tr("Hủy"), style: 'cancel' },
         {
-          text: 'Xóa vĩnh viễn',
+          text: tr("Xóa vĩnh viễn"),
           style: 'destructive',
           onPress: async () => {
             try {
               await workspaceService.deleteWorkspace(workspace.id);
-              Alert.alert('Thành công', 'Đã xóa Workspace thành công.');
+              Alert.alert(tr("Thành công"), tr("Đã xóa Workspace thành công."));
               router.back();
             } catch (e: any) {
-              Alert.alert('Lỗi', e.response?.data?.message || 'Không thể xóa Workspace này.');
+              Alert.alert(tr("Lỗi"), tr("Không thể xóa Workspace này."));
             }
           },
         },
@@ -194,7 +196,7 @@ export default function WorkspaceDetailScreen() {
         <StatusBar barStyle="light-content" backgroundColor="#101214" />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#579DFF" />
-          <Text style={styles.loadingText}>Đang tải chi tiết Workspace...</Text>
+          <Text style={styles.loadingText}>{tr("Đang tải chi tiết Workspace...")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -205,9 +207,9 @@ export default function WorkspaceDetailScreen() {
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="light-content" backgroundColor="#101214" />
         <View style={styles.centerContainer}>
-          <Text style={styles.errorText}>{error || 'Không tìm thấy Workspace.'}</Text>
+          <Text style={styles.errorText}>{tr(error || "Không tìm thấy Workspace.")}</Text>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backBtnText}>Quay lại</Text>
+            <Text style={styles.backBtnText}>{tr("Quay lại")}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -234,7 +236,7 @@ export default function WorkspaceDetailScreen() {
             <Text style={styles.headerTitle} numberOfLines={1}>
               {workspace.name}
             </Text>
-            <Text style={styles.headerSub}>Chi Tiết Workspace</Text>
+            <Text style={styles.headerSub}>{tr("Chi Tiết Workspace")}</Text>
           </View>
 
           <TouchableOpacity
@@ -267,7 +269,7 @@ export default function WorkspaceDetailScreen() {
               <View style={styles.infoTitleWrap}>
                 <Text style={styles.wsName}>{workspace.name}</Text>
                 <Text style={styles.wsDesc}>
-                  {workspace.description || 'Chưa có mô tả chi tiết cho Workspace này.'}
+                  {workspace.description || tr("Chưa có mô tả chi tiết cho Workspace này.")}
                 </Text>
               </View>
             </View>
@@ -275,7 +277,7 @@ export default function WorkspaceDetailScreen() {
             <View style={styles.metaRow}>
               <Calendar size={14} color="#8C9BAB" />
               <Text style={styles.metaText}>
-                Tạo ngày: {new Date(workspace.createdAt).toLocaleDateString('vi-VN')}
+                {tr("Tạo ngày:")}{' '}{new Date(workspace.createdAt).toLocaleDateString(locale)}
               </Text>
             </View>
           </View>
@@ -284,17 +286,17 @@ export default function WorkspaceDetailScreen() {
           <View style={styles.metricsGrid}>
             <View style={styles.metricCard}>
               <View style={styles.metricHeader}>
-                <Text style={styles.metricLabel}>TỔNG SPACES</Text>
+                <Text style={styles.metricLabel}>{tr("TỔNG SPACES")}</Text>
                 <Layers size={16} color="#8C9BAB" />
               </View>
               <Text style={styles.metricValue}>{spaces.length}</Text>
-              <Text style={styles.metricSubText}>Không gian làm việc</Text>
+              <Text style={styles.metricSubText}>{tr("Không gian làm việc")}</Text>
             </View>
 
             <View style={styles.metricCard}>
               <View style={styles.metricHeader}>
                 <View style={styles.metricLabelRow}>
-                  <Text style={styles.metricLabel}>TIẾN ĐỘ CHUNG</Text>
+                  <Text style={styles.metricLabel}>{tr("TIẾN ĐỘ CHUNG")}</Text>
                   <TouchableOpacity
                     onPress={() => setExplainModalVisible(true)}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -315,8 +317,8 @@ export default function WorkspaceDetailScreen() {
               >
                 <Text style={styles.metricSubText}>
                   {taskStats.total > 0
-                    ? `${taskStats.done}/${taskStats.total} việc hoàn thành`
-                    : 'Chưa có công việc'}{' '}
+                    ? tr("{0}/{1} việc hoàn thành", { 0: taskStats.done, 1: taskStats.total })
+                    : tr("Chưa có công việc")}{' '}
                   <Text style={{ color: overallProgressColor.main, fontWeight: '700' }}>(!)</Text>
                 </Text>
               </TouchableOpacity>
@@ -344,7 +346,7 @@ export default function WorkspaceDetailScreen() {
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
               <Compass size={18} color="#579DFF" />
-              <Text style={styles.sectionTitle}>Danh Sách Spaces ({spaces.length})</Text>
+              <Text style={styles.sectionTitle}>{tr("Danh Sách Spaces (")}{spaces.length})</Text>
             </View>
 
             <TouchableOpacity
@@ -353,7 +355,7 @@ export default function WorkspaceDetailScreen() {
               activeOpacity={0.8}
             >
               <Plus size={15} color="#FFFFFF" />
-              <Text style={styles.addSpaceText}>Thêm Space</Text>
+              <Text style={styles.addSpaceText}>{tr("Thêm Space")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -362,10 +364,9 @@ export default function WorkspaceDetailScreen() {
             {spaces.length === 0 ? (
               <View style={styles.emptySpaceBox}>
                 <Compass size={32} color="#8C9BAB" style={{ marginBottom: 10 }} />
-                <Text style={styles.emptySpaceTitle}>Chưa có Space nào</Text>
+                <Text style={styles.emptySpaceTitle}>{tr("Chưa có Space nào")}</Text>
                 <Text style={styles.emptySpaceText}>
-                  Hãy nhấn nút "Thêm Space" để tạo không gian quản lý dự án cho Workspace này.
-                </Text>
+                  {tr("Hãy nhấn nút \"Thêm Space\" để tạo không gian quản lý dự án cho Workspace này.")}</Text>
               </View>
             ) : (
               spaces.map((sp) => {
@@ -389,12 +390,12 @@ export default function WorkspaceDetailScreen() {
                       </Text>
                       <Text style={styles.spaceDate}>
                         {sp.startDate
-                          ? new Date(sp.startDate).toLocaleDateString('vi-VN')
-                          : 'Chưa đặt'}{' '}
+                          ? new Date(sp.startDate).toLocaleDateString(locale)
+                          : tr("Chưa đặt")}{' '}
                         →{' '}
                         {sp.endDate
-                          ? new Date(sp.endDate).toLocaleDateString('vi-VN')
-                          : 'Không thời hạn'}
+                          ? new Date(sp.endDate).toLocaleDateString(locale)
+                          : tr("Không thời hạn")}
                       </Text>
                     </View>
                     {bInfo && bInfo.total > 0 && (
@@ -458,7 +459,7 @@ export default function WorkspaceDetailScreen() {
             <View style={styles.actionSheetContainer}>
               <View style={styles.actionSheetHeader}>
                 <View style={styles.actionSheetIndicator} />
-                <Text style={styles.actionSheetTitle}>Cài đặt Workspace</Text>
+                <Text style={styles.actionSheetTitle}>{tr("Cài đặt Workspace")}</Text>
                 <Text style={styles.actionSheetSub}>{workspace.name}</Text>
               </View>
 
@@ -475,10 +476,9 @@ export default function WorkspaceDetailScreen() {
                   <UserPlus size={18} color="#579DFF" />
                 </View>
                 <View style={styles.actionTextWrap}>
-                  <Text style={styles.actionTitle}>Thêm thành viên</Text>
+                  <Text style={styles.actionTitle}>{tr("Thêm thành viên")}</Text>
                   <Text style={styles.actionDesc}>
-                    Mời người dùng khác tham gia vào Workspace này
-                  </Text>
+                    {tr("Mời người dùng khác tham gia vào Workspace này")}</Text>
                 </View>
               </TouchableOpacity>
 
@@ -495,10 +495,9 @@ export default function WorkspaceDetailScreen() {
                   <Edit3 size={18} color="#E6EDF3" />
                 </View>
                 <View style={styles.actionTextWrap}>
-                  <Text style={styles.actionTitle}>Chỉnh sửa Workspace</Text>
+                  <Text style={styles.actionTitle}>{tr("Chỉnh sửa Workspace")}</Text>
                   <Text style={styles.actionDesc}>
-                    Thay đổi tên và mô tả của Workspace
-                  </Text>
+                    {tr("Thay đổi tên và mô tả của Workspace")}</Text>
                 </View>
               </TouchableOpacity>
 
@@ -518,11 +517,9 @@ export default function WorkspaceDetailScreen() {
                 </View>
                 <View style={styles.actionTextWrap}>
                   <Text style={[styles.actionTitle, { color: '#EF4444' }]}>
-                    Xóa Workspace
-                  </Text>
+                    {tr("Xóa Workspace")}</Text>
                   <Text style={styles.actionDesc}>
-                    Xóa vĩnh viễn Workspace này và toàn bộ các Spaces bên trong
-                  </Text>
+                    {tr("Xóa vĩnh viễn Workspace này và toàn bộ các Spaces bên trong")}</Text>
                 </View>
               </TouchableOpacity>
 
@@ -531,7 +528,7 @@ export default function WorkspaceDetailScreen() {
                 onPress={() => setSettingsMenuVisible(false)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.cancelActionBtnText}>Đóng</Text>
+                <Text style={styles.cancelActionBtnText}>{tr("Đóng")}</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -552,8 +549,8 @@ export default function WorkspaceDetailScreen() {
                     <AlertCircle size={20} color="#579DFF" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.explainTitle}>Lý do tính ra {taskStats.percent}%</Text>
-                    <Text style={styles.explainSubTitle}>Cách tính tiến độ Workspace</Text>
+                    <Text style={styles.explainTitle}>{tr('Lý do tính ra {percent}%', { percent: taskStats.percent })}</Text>
+                    <Text style={styles.explainSubTitle}>{tr("Cách tính tiến độ Workspace")}</Text>
                   </View>
                 </View>
                 <TouchableOpacity
@@ -572,24 +569,21 @@ export default function WorkspaceDetailScreen() {
                     {taskStats.percent}%
                   </Text>
                   <Text style={styles.summaryLabel}>
-                    Đạt được {taskStats.done} trên tổng số {taskStats.total} công việc đã hoàn thành
-                  </Text>
+                    {tr('Đạt được {done} trên tổng số {total} công việc đã hoàn thành', { done: taskStats.done, total: taskStats.total })}</Text>
                 </View>
 
                 {/* Formula Box */}
                 <View style={styles.formulaBox}>
-                  <Text style={styles.formulaHeader}>CÔNG THỨC ÁP DỤNG</Text>
+                  <Text style={styles.formulaHeader}>{tr("CÔNG THỨC ÁP DỤNG")}</Text>
                   <Text style={styles.formulaEquation}>
-                    Tiến độ = (Tổng task DONE ÷ Tổng tất cả task) × 100%
-                  </Text>
+                    {tr("Tiến độ = (Tổng task DONE ÷ Tổng tất cả task) × 100%")}</Text>
                   <Text style={styles.formulaNote}>
-                    💡 Tiến độ tính theo trọng số công việc thực tế, không lấy trung bình cộng % của các Space. Space nào có nhiều việc hơn sẽ chiếm tỷ trọng lớn hơn trong toàn bộ Workspace.
-                  </Text>
+                    {tr("💡 Tiến độ tính theo trọng số công việc thực tế, không lấy trung bình cộng % của các Space. Space nào có nhiều việc hơn sẽ chiếm tỷ trọng lớn hơn trong toàn bộ Workspace.")}</Text>
                 </View>
 
                 {/* Breakdown per Space */}
                 <Text style={styles.breakdownHeader}>
-                  ĐÓNG GÓP CỦA TỪNG KHÔNG GIAN ({spaceBreakdown.length})
+                  {tr("ĐÓNG GÓP CỦA TỪNG KHÔNG GIAN (")}{spaceBreakdown.length})
                 </Text>
                 <View style={styles.breakdownList}>
                   {spaceBreakdown.map((item) => {
@@ -601,8 +595,7 @@ export default function WorkspaceDetailScreen() {
                             {item.spaceName}
                           </Text>
                           <Text style={styles.breakdownSpaceSub}>
-                            {item.done}/{item.total} việc hoàn thành ({item.total} task)
-                          </Text>
+                            {item.done}/{item.total} {tr("việc hoàn thành (")}{item.total} {tr("task)")}</Text>
                         </View>
                         <View style={styles.breakdownRight}>
                           <View
@@ -628,31 +621,27 @@ export default function WorkspaceDetailScreen() {
 
                 {/* Color Legend Box */}
                 <View style={styles.colorLegendBox}>
-                  <Text style={styles.legendHeader}>QUY ĐỊNH MÀU SẮC TIẾN ĐỘ</Text>
+                  <Text style={styles.legendHeader}>{tr("QUY ĐỊNH MÀU SẮC TIẾN ĐỘ")}</Text>
                   <View style={styles.legendGrid}>
                     <View style={styles.legendItem}>
                       <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
                       <Text style={styles.legendText}>
-                        <Text style={{ color: '#EF4444', fontWeight: '700' }}>0% - &lt;30%</Text>: Màu đỏ (Cần đẩy nhanh)
-                      </Text>
+                        <Text style={{ color: '#EF4444', fontWeight: '700' }}>{tr("0% - &lt;30%")}</Text>{tr(": Màu đỏ (Cần đẩy nhanh)")}</Text>
                     </View>
                     <View style={styles.legendItem}>
                       <View style={[styles.legendDot, { backgroundColor: '#F59E0B' }]} />
                       <Text style={styles.legendText}>
-                        <Text style={{ color: '#F59E0B', fontWeight: '700' }}>30% - &lt;70%</Text>: Màu vàng (Đang tiến triển)
-                      </Text>
+                        <Text style={{ color: '#F59E0B', fontWeight: '700' }}>{tr("30% - &lt;70%")}</Text>{tr(": Màu vàng (Đang tiến triển)")}</Text>
                     </View>
                     <View style={styles.legendItem}>
                       <View style={[styles.legendDot, { backgroundColor: '#579DFF' }]} />
                       <Text style={styles.legendText}>
-                        <Text style={{ color: '#579DFF', fontWeight: '700' }}>70% - &lt;100%</Text>: Màu xanh dương (Khá tốt)
-                      </Text>
+                        <Text style={{ color: '#579DFF', fontWeight: '700' }}>{tr("70% - &lt;100%")}</Text>{tr(": Màu xanh dương (Khá tốt)")}</Text>
                     </View>
                     <View style={styles.legendItem}>
                       <View style={[styles.legendDot, { backgroundColor: '#57D9A3' }]} />
                       <Text style={styles.legendText}>
-                        <Text style={{ color: '#57D9A3', fontWeight: '700' }}>100%</Text>: Màu xanh lá cây (Hoàn thành)
-                      </Text>
+                        <Text style={{ color: '#57D9A3', fontWeight: '700' }}>100%</Text>{tr(": Màu xanh lá cây (Hoàn thành)")}</Text>
                     </View>
                   </View>
                 </View>
@@ -660,7 +649,7 @@ export default function WorkspaceDetailScreen() {
                 {/* Compare Note */}
                 <View style={styles.compareNoteBox}>
                   <Text style={styles.compareNoteText}>
-                    • Nếu lấy trung bình cộng: ({spaceBreakdown.map((s) => `${s.percent}%`).join(' + ')}) ÷ {spaceBreakdown.length || 1} ={' '}
+                    {tr("• Nếu lấy trung bình cộng: (")}{spaceBreakdown.map((s) => `${s.percent}%`).join(' + ')}{tr(") ÷")}{spaceBreakdown.length || 1} ={' '}
                     <Text style={{ fontWeight: '700', color: '#E6EDF3' }}>
                       {spaceBreakdown.length > 0
                         ? `${Math.round(
@@ -669,12 +658,11 @@ export default function WorkspaceDetailScreen() {
                           )}%`
                         : '0%'}
                     </Text>
-                    {'\n'}• Nhưng thực tế cả Workspace đã hoàn thành{' '}
+                    {'\n'}{tr("• Nhưng thực tế cả Workspace đã hoàn thành")}{' '}
                     <Text style={{ fontWeight: '700', color: overallProgressColor.main }}>
-                      {taskStats.done}/{taskStats.total} task ({taskStats.percent}%)
+                      {taskStats.done}/{taskStats.total} {tr("task (")}{taskStats.percent}%)
                     </Text>
-                    , nên hệ thống phản ánh đúng {taskStats.percent}% khối lượng công việc.
-                  </Text>
+                    {tr(", nên hệ thống phản ánh đúng")}{taskStats.percent}{tr("% khối lượng công việc.")}</Text>
                 </View>
               </ScrollView>
 
@@ -683,7 +671,7 @@ export default function WorkspaceDetailScreen() {
                 onPress={() => setExplainModalVisible(false)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.understandBtnText}>Đã hiểu</Text>
+                <Text style={styles.understandBtnText}>{tr("Đã hiểu")}</Text>
               </TouchableOpacity>
             </View>
           </View>

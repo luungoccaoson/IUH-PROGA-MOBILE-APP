@@ -1,3 +1,4 @@
+import { translate as tr, useTranslation as useSystemTranslation } from '../i18n';
 import React, { useState, useMemo } from 'react';
 import {
   View,
@@ -24,6 +25,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
   onTasksCreated,
 }) => {
   const { colors, isDark } = useThemeStore();
+  useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [selectedAgent, setSelectedAgent] = useState<AgentType>('REQUIREMENT');
@@ -32,6 +34,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
       id: 1,
       threadId: 1,
       senderType: 'ASSISTANT',
+      systemGenerated: true,
       messageContent:
         'Xin chào! Tôi là Requirement Agent. Hãy mô tả tính năng bạn cần xây dựng, tôi sẽ tự động phân rã thành các công việc nhỏ cho Space của bạn.',
       jsonPayload: JSON.stringify([
@@ -86,7 +89,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
 
   const handleBatchCreateTasks = async (jsonPayloadStr: string) => {
     if (!spaceId) {
-      Alert.alert('Thông báo', 'Vui lòng mở một Space cụ thể trước khi thêm các Task này.');
+      Alert.alert(tr("Thông báo"), tr("Vui lòng mở một Space cụ thể trước khi thêm các Task này."));
       return;
     }
 
@@ -102,11 +105,11 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
           status: 'TODO',
         });
       }
-      Alert.alert('Thành công', `Đã thêm thành công ${items.length} công việc vào Space!`);
+      Alert.alert(tr("Thành công"), tr("Đã thêm thành công {0} công việc vào Space!", { 0: items.length }));
       if (onTasksCreated) onTasksCreated();
     } catch (err) {
       console.error('Error batch creating tasks:', err);
-      Alert.alert('Lỗi', 'Không thể tự động tạo công việc. Vui lòng kiểm tra lại.');
+      Alert.alert(tr("Lỗi"), tr("Không thể tự động tạo công việc. Vui lòng kiểm tra lại."));
     } finally {
       setCreatingTasks(false);
     }
@@ -116,7 +119,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
     <View style={styles.container}>
       {/* Agent Selector Header */}
       <View style={styles.agentBar}>
-        <Text style={styles.agentLabel}>CHỌN AI AGENT:</Text>
+        <Text style={styles.agentLabel}>{tr("CHỌN AI AGENT:")}</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -139,8 +142,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
                 selectedAgent === 'REQUIREMENT' && styles.agentChipTextActive,
               ]}
             >
-              Requirement Agent
-            </Text>
+              {tr("Requirement Agent")}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -160,8 +162,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
                 selectedAgent === 'PM' && styles.agentChipTextActive,
               ]}
             >
-              PM Agent
-            </Text>
+              {tr("PM Agent")}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -181,8 +182,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
                 selectedAgent === 'TECHNICAL_ADVISOR' && styles.agentChipTextActive,
               ]}
             >
-              Tech Advisor Agent
-            </Text>
+              {tr("Tech Advisor Agent")}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -222,20 +222,20 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
                 ]}
               >
                 <Text style={[styles.msgText, isUser && styles.userMsgText]}>
-                  {msg.messageContent}
+                  {msg.systemGenerated ? tr(msg.messageContent, msg.systemMessageValues) : msg.messageContent}
                 </Text>
 
                 {/* Render Task Deconstruction Preview Card if present */}
                 {parsedTasks.length > 0 && (
                   <View style={styles.taskPreviewCard}>
-                    <Text style={styles.previewTitle}>🎯 DANH SÁCH TASK GỢI Ý BỞI AI:</Text>
+                    <Text style={styles.previewTitle}>{tr("🎯 DANH SÁCH TASK GỢI Ý BỞI AI:")}</Text>
                     {parsedTasks.map((t, i) => (
                       <View key={i} style={styles.previewItem}>
                         <Text style={styles.previewItemNumber}>{i + 1}.</Text>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.previewItemTitle}>{t.title}</Text>
+                          <Text style={styles.previewItemTitle}>{msg.systemGenerated ? tr(t.title) : t.title}</Text>
                           {!!t.description && (
-                            <Text style={styles.previewItemDesc}>{t.description}</Text>
+                            <Text style={styles.previewItemDesc}>{msg.systemGenerated ? tr(t.description!) : t.description}</Text>
                           )}
                         </View>
                       </View>
@@ -251,7 +251,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
                       ) : (
                         <>
                           <PlusCircle size={14} color="#FFFFFF" />
-                          <Text style={styles.addTasksText}>ĐỒNG Ý TẠO CÁC TASK NÀY</Text>
+                          <Text style={styles.addTasksText}>{tr("ĐỒNG Ý TẠO CÁC TASK NÀY")}</Text>
                         </>
                       )}
                     </TouchableOpacity>
@@ -281,7 +281,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
               ]}
             >
               <ActivityIndicator color={colors.primary} size="small" />
-              <Text style={styles.msgText}>AI đang phân tích yêu cầu...</Text>
+              <Text style={styles.msgText}>{tr("AI đang phân tích yêu cầu...")}</Text>
             </View>
           </View>
         )}
@@ -291,7 +291,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder={`Nhập yêu cầu cho ${selectedAgent}...`}
+          placeholder={tr("Nhập yêu cầu cho {0}...", { 0: tr(selectedAgent === 'REQUIREMENT' ? 'Requirement Agent' : selectedAgent === 'PM' ? 'PM Agent' : 'Tech Advisor Agent') })}
           placeholderTextColor={colors.mutedText}
           value={inputPrompt}
           onChangeText={setInputPrompt}

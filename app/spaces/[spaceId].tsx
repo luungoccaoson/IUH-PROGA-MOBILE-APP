@@ -1,3 +1,4 @@
+import { systemLabel, translate as tr, useTranslation as useSystemTranslation } from '../../i18n';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
@@ -65,6 +66,7 @@ export default function SpaceDetailScreen() {
   const { spaceId } = useLocalSearchParams();
   const router = useRouter();
   const { colors, isDark } = useThemeStore();
+  const { locale } = useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
   const { user } = useAuthStore();
   const idNum = parseInt(spaceId as string, 10);
@@ -176,12 +178,12 @@ export default function SpaceDetailScreen() {
         const assignedTasks = taskList.filter((t: any) => t.assigneeId === uid || t.ownerId === uid);
         const completedTasks = assignedTasks.filter((t) => t.status === 'DONE');
 
-        const fullName = profile?.fullName || profile?.displayName || profile?.username || `Thành viên #${uid}`;
+        const fullName = profile?.fullName || profile?.displayName || profile?.username || '';
         const username = profile?.username || `user_${uid}`;
         const email = profile?.email || '';
         const avatarUrl = profile?.avatarUrl;
 
-        let roleName = 'Thành viên';
+        let roleName = 'MEMBER';
         if (isOwner) {
           roleName = 'Owner';
         } else if (meta?.roleId === 2) {
@@ -230,7 +232,7 @@ export default function SpaceDetailScreen() {
     try {
       await workspaceService.updateTaskStatus(taskId, newStatus);
     } catch (e) {
-      Alert.alert('Lỗi', 'Không thể cập nhật trạng thái nhiệm vụ.');
+      Alert.alert(tr("Lỗi"), tr("Không thể cập nhật trạng thái nhiệm vụ."));
       loadData();
     }
   };
@@ -274,17 +276,17 @@ export default function SpaceDetailScreen() {
 
   const handleDeleteSpace = async () => {
     if (!space) return;
-    Alert.alert('Xác nhận xóa', `Bạn có chắc muốn xóa không gian "${space.name}"?`, [
-      { text: 'Hủy', style: 'cancel' },
+    Alert.alert(tr("Xác nhận xóa"), tr("Bạn có chắc muốn xóa không gian \"{0}\"?", { 0: space.name }), [
+      { text: tr("Hủy"), style: 'cancel' },
       {
-        text: 'Xóa',
+        text: tr("Xóa"),
         style: 'destructive',
         onPress: async () => {
           try {
             await workspaceService.deleteSpace(space.id);
             router.back();
           } catch (e) {
-            Alert.alert('Lỗi', 'Không thể xóa Không gian này.');
+            Alert.alert(tr("Lỗi"), tr("Không thể xóa Không gian này."));
           }
         },
       },
@@ -310,7 +312,7 @@ export default function SpaceDetailScreen() {
         <StatusBar barStyle={colors.statusBar} backgroundColor={colors.headerBg} />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Đang tải chi tiết Không gian...</Text>
+          <Text style={styles.loadingText}>{tr("Đang tải chi tiết Không gian...")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -372,8 +374,7 @@ export default function SpaceDetailScreen() {
                   activeTab === 'overview' && styles.subTabTextActive,
                 ]}
               >
-                Tổng quan
-              </Text>
+                {tr("Tổng quan")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -391,8 +392,7 @@ export default function SpaceDetailScreen() {
                   activeTab === 'tasks' && styles.subTabTextActive,
                 ]}
               >
-                Công việc
-              </Text>
+                {tr("Công việc")}</Text>
               <View style={[styles.tabBadge, activeTab === 'tasks' && styles.tabBadgeActive]}>
                 <Text style={[styles.tabBadgeText, activeTab === 'tasks' && styles.tabBadgeTextActive]}>
                   {totalTasks}
@@ -415,8 +415,7 @@ export default function SpaceDetailScreen() {
                   activeTab === 'kanban' && styles.subTabTextActive,
                 ]}
               >
-                Bảng Kanban
-              </Text>
+                {tr("Bảng Kanban")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -434,8 +433,7 @@ export default function SpaceDetailScreen() {
                   activeTab === 'members' && styles.subTabTextActive,
                 ]}
               >
-                Thành viên
-              </Text>
+                {tr("Thành viên")}</Text>
               <View style={[styles.tabBadge, activeTab === 'members' && styles.tabBadgeActive]}>
                 <Text style={[styles.tabBadgeText, activeTab === 'members' && styles.tabBadgeTextActive]}>
                   {members.length}
@@ -472,7 +470,7 @@ export default function SpaceDetailScreen() {
               {/* Progress Card */}
               <View style={styles.cardBox}>
                 <View style={styles.progressHeader}>
-                  <Text style={styles.cardBoxTitle}>TIẾN ĐỘ HOÀN THÀNH</Text>
+                  <Text style={styles.cardBoxTitle}>{tr("TIẾN ĐỘ HOÀN THÀNH")}</Text>
                   <Text style={[styles.progressPercentText, { color: progressColor.main }]}>
                     {percentComplete}%
                   </Text>
@@ -488,69 +486,68 @@ export default function SpaceDetailScreen() {
                 </View>
 
                 <Text style={styles.progressSubText}>
-                  Đã hoàn tất {doneTasks} trên tổng số {totalTasks} nhiệm vụ
-                </Text>
+                  {tr('Đã hoàn tất {done} trên tổng số {total} nhiệm vụ', { done: doneTasks, total: totalTasks })}</Text>
               </View>
 
               {/* 3 Metric Cards Grid (TODO, IN_PROGRESS, DONE) */}
               <View style={styles.metricsGrid}>
                 <View style={styles.metricCard}>
-                  <Text style={styles.metricLabel}>CẦN LÀM</Text>
+                  <Text style={styles.metricLabel}>{tr("CẦN LÀM")}</Text>
                   <Text style={[styles.metricValue, { color: '#8C9BAB' }]}>
                     {todoTasks}
                   </Text>
-                  <Text style={styles.metricSub}>Trạng thái TODO</Text>
+                  <Text style={styles.metricSub}>{tr("Trạng thái TODO")}</Text>
                 </View>
 
                 <View style={styles.metricCard}>
-                  <Text style={styles.metricLabel}>ĐANG THỰC HIỆN</Text>
+                  <Text style={styles.metricLabel}>{tr("ĐANG THỰC HIỆN")}</Text>
                   <Text style={[styles.metricValue, { color: '#579DFF' }]}>
                     {inProgressTasks}
                   </Text>
-                  <Text style={styles.metricSub}>Trạng thái IN PROGRESS</Text>
+                  <Text style={styles.metricSub}>{tr("Trạng thái IN PROGRESS")}</Text>
                 </View>
 
                 <View style={styles.metricCard}>
-                  <Text style={styles.metricLabel}>ĐÃ HOÀN THÀNH</Text>
+                  <Text style={styles.metricLabel}>{tr("ĐÃ HOÀN THÀNH")}</Text>
                   <Text style={[styles.metricValue, { color: '#57D9A3' }]}>
                     {doneTasks}
                   </Text>
-                  <Text style={styles.metricSub}>Trạng thái DONE</Text>
+                  <Text style={styles.metricSub}>{tr("Trạng thái DONE")}</Text>
                 </View>
               </View>
 
               {/* Space Info Card */}
               <View style={styles.cardBox}>
-                <Text style={styles.cardBoxTitle}>THÔNG TIN KHÔNG GIAN</Text>
+                <Text style={styles.cardBoxTitle}>{tr("THÔNG TIN KHÔNG GIAN")}</Text>
 
                 <View style={styles.infoRow}>
                   <Calendar size={16} color="#8C9BAB" style={{ marginRight: 10 }} />
-                  <Text style={styles.infoLabel}>Thời gian:</Text>
+                  <Text style={styles.infoLabel}>{tr("Thời gian:")}</Text>
                   <Text style={styles.infoValue}>
                     {space?.startDate
-                      ? new Date(space.startDate).toLocaleDateString('vi-VN')
-                      : 'Chưa đặt'}{' '}
+                      ? new Date(space.startDate).toLocaleDateString(locale)
+                      : tr("Chưa đặt")}{' '}
                     →{' '}
                     {space?.endDate
-                      ? new Date(space.endDate).toLocaleDateString('vi-VN')
-                      : 'Không thời hạn'}
+                      ? new Date(space.endDate).toLocaleDateString(locale)
+                      : tr("Không thời hạn")}
                   </Text>
                 </View>
 
                 {workspace && (
                   <View style={styles.infoRow}>
                     <Building size={16} color="#8C9BAB" style={{ marginRight: 10 }} />
-                    <Text style={styles.infoLabel}>Workspace:</Text>
+                    <Text style={styles.infoLabel}>{tr("Workspace:")}</Text>
                     <Text style={styles.infoValue}>{workspace.name}</Text>
                   </View>
                 )}
 
                 <View style={styles.infoRow}>
                   <Clock size={16} color="#8C9BAB" style={{ marginRight: 10 }} />
-                  <Text style={styles.infoLabel}>Khởi tạo ngày:</Text>
+                  <Text style={styles.infoLabel}>{tr("Khởi tạo ngày:")}</Text>
                   <Text style={styles.infoValue}>
                     {space?.createdAt
-                      ? new Date(space.createdAt).toLocaleDateString('vi-VN')
+                      ? new Date(space.createdAt).toLocaleDateString(locale)
                       : 'N/A'}
                   </Text>
                 </View>
@@ -563,7 +560,7 @@ export default function SpaceDetailScreen() {
                 activeOpacity={0.8}
               >
                 <Plus size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={styles.primaryActionBtnText}>Thêm công việc vào Space</Text>
+                <Text style={styles.primaryActionBtnText}>{tr("Thêm công việc vào Space")}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -578,10 +575,10 @@ export default function SpaceDetailScreen() {
                 contentContainerStyle={styles.filterScroll}
               >
                 {[
-                  { key: 'ALL', label: `Tất cả (${totalTasks})` },
-                  { key: 'TODO', label: `Cần làm (${todoTasks})` },
-                  { key: 'IN_PROGRESS', label: `Đang làm (${inProgressTasks})` },
-                  { key: 'DONE', label: `Đã xong (${doneTasks})` },
+                  { key: 'ALL', label: tr("Tất cả ({0})", { 0: totalTasks }) },
+                  { key: 'TODO', label: tr("Cần làm ({0})", { 0: todoTasks }) },
+                  { key: 'IN_PROGRESS', label: tr("Đang làm ({0})", { 0: inProgressTasks }) },
+                  { key: 'DONE', label: tr("Đã xong ({0})", { 0: doneTasks }) },
                 ].map((f) => (
                   <TouchableOpacity
                     key={f.key}
@@ -606,16 +603,15 @@ export default function SpaceDetailScreen() {
               {filteredTasks.length === 0 ? (
                 <View style={styles.emptyCardBox}>
                   <CheckCircle2 size={36} color="#579DFF" style={{ marginBottom: 10 }} />
-                  <Text style={styles.emptyCardTitle}>Không có công việc nào</Text>
+                  <Text style={styles.emptyCardTitle}>{tr("Không có công việc nào")}</Text>
                   <Text style={styles.emptyCardSub}>
-                    Chưa có nhiệm vụ nào trong mục này. Bấm nút bên dưới để tạo mới.
-                  </Text>
+                    {tr("Chưa có nhiệm vụ nào trong mục này. Bấm nút bên dưới để tạo mới.")}</Text>
                   <TouchableOpacity
                     style={styles.emptyCreateBtn}
                     onPress={() => setCreateTaskVisible(true)}
                   >
                     <Plus size={16} color="#579DFF" style={{ marginRight: 4 }} />
-                    <Text style={styles.emptyCreateBtnText}>Thêm task</Text>
+                    <Text style={styles.emptyCreateBtnText}>{tr("Thêm task")}</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -649,7 +645,7 @@ export default function SpaceDetailScreen() {
                           {t.title}
                         </Text>
                         <Text style={styles.taskCardSub}>
-                          #{t.id} • {t.status} • Độ ưu tiên: {t.priority || 'MEDIUM'}
+                          #{t.id} • {systemLabel(t.status)} {tr("• Độ ưu tiên:")}{systemLabel(t.priority || 'MEDIUM')}
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -663,7 +659,7 @@ export default function SpaceDetailScreen() {
                 activeOpacity={0.8}
               >
                 <Plus size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={styles.primaryActionBtnText}>Tạo công việc mới</Text>
+                <Text style={styles.primaryActionBtnText}>{tr("Tạo công việc mới")}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -676,7 +672,7 @@ export default function SpaceDetailScreen() {
               <View style={styles.cardBox}>
                 <View style={styles.memberHeaderRow}>
                   <Text style={styles.cardBoxTitle}>
-                    DANH SÁCH THÀNH VIÊN ({members.length})
+                    {tr("DANH SÁCH THÀNH VIÊN (")}{members.length})
                   </Text>
                   {space?.workspaceId ? (
                     <TouchableOpacity
@@ -685,7 +681,7 @@ export default function SpaceDetailScreen() {
                       activeOpacity={0.8}
                     >
                       <UserPlus size={14} color="#579DFF" />
-                      <Text style={styles.addMemberBtnText}>Thêm</Text>
+                      <Text style={styles.addMemberBtnText}>{tr("Thêm")}</Text>
                     </TouchableOpacity>
                   ) : null}
                 </View>
@@ -694,8 +690,7 @@ export default function SpaceDetailScreen() {
                   <View style={styles.emptyMembersWrap}>
                     <Users size={32} color="#8C9BAB" style={{ marginBottom: 8 }} />
                     <Text style={styles.emptyCardSub}>
-                      Chưa có thành viên nào trong không gian này.
-                    </Text>
+                      {tr("Chưa có thành viên nào trong không gian này.")}</Text>
                   </View>
                 ) : (
                   members.map((m, idx) => (
@@ -719,21 +714,21 @@ export default function SpaceDetailScreen() {
                       <View style={{ flex: 1, marginRight: 8 }}>
                         <View style={styles.memberNameLine}>
                           <Text style={styles.memberName} numberOfLines={1}>
-                            {m.fullName}
+                            {m.fullName || tr("Thành viên #{0}", { 0: m.id })}
                           </Text>
                           {m.isOwner ? (
                             <View style={styles.ownerBadge}>
                               <Crown size={11} color="#FFAB00" style={{ marginRight: 3 }} />
-                              <Text style={styles.ownerBadgeText}>Owner</Text>
+                              <Text style={styles.ownerBadgeText}>{tr("Owner")}</Text>
                             </View>
                           ) : m.roleId === 2 ? (
                             <View style={styles.pmBadge}>
                               <Shield size={11} color="#579DFF" style={{ marginRight: 3 }} />
-                              <Text style={styles.pmBadgeText}>PM</Text>
+                              <Text style={styles.pmBadgeText}>{tr("PM")}</Text>
                             </View>
                           ) : (
                             <View style={styles.memberBadge}>
-                              <Text style={styles.memberBadgeText}>Member</Text>
+                              <Text style={styles.memberBadgeText}>{tr("Member")}</Text>
                             </View>
                           )}
                         </View>
@@ -746,8 +741,8 @@ export default function SpaceDetailScreen() {
                           <View style={styles.statDot} />
                           <Text style={styles.memberStatsText}>
                             {m.assignedTasksCount > 0
-                              ? `${m.assignedTasksCount} công việc (${m.completedTasksCount} hoàn thành)`
-                              : 'Chưa có công việc được giao'}
+                              ? tr("{0} công việc ({1} hoàn thành)", { 0: m.assignedTasksCount, 1: m.completedTasksCount })
+                              : tr("Chưa có công việc được giao")}
                           </Text>
                         </View>
                       </View>

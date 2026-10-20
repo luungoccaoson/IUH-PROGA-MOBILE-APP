@@ -1,3 +1,4 @@
+import { systemLabel, translate as tr, useTranslation as useSystemTranslation } from '../i18n';
 import React, { useState, useRef, useMemo } from 'react';
 import {
   View,
@@ -60,6 +61,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onUpdateStatus,
 }) => {
   const { colors, isDark } = useThemeStore();
+  useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [draggingTask, setDraggingTask] = useState<Task | null>(null);
@@ -159,7 +161,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               <View style={[styles.columnHeader, { borderTopColor: col.color }]}>
                 <View style={styles.columnTitleWrap}>
                   <Icon size={16} color={col.color} />
-                  <Text style={styles.columnTitle}>{col.title}</Text>
+                  <Text style={styles.columnTitle}>{tr(col.title)}</Text>
                 </View>
                 <View style={[styles.countBadge, { backgroundColor: col.bgLight }]}>
                   <Text style={[styles.countBadgeText, { color: col.color }]}>
@@ -177,7 +179,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 {colTasks.length === 0 ? (
                   <View style={styles.emptyColumn}>
                     <Text style={styles.emptyColumnText}>
-                      {isTargeted ? 'Thả task vào đây' : 'Trống'}
+                      {isTargeted ? tr("Thả task vào đây") : tr("Trống")}
                     </Text>
                   </View>
                 ) : (
@@ -215,7 +217,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                 { color: priorityColor },
                               ]}
                             >
-                              {t.priority || 'MEDIUM'}
+                              {systemLabel(t.priority || 'MEDIUM')}
                             </Text>
                           </View>
                         </View>
@@ -227,14 +229,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
                         {/* Footer: Quick status hint */}
                         <View style={styles.cardFooter}>
-                          <Text style={styles.dragHintText}>Giữ để kéo thả</Text>
+                          <Text style={styles.dragHintText}>{tr("Giữ để kéo thả")}</Text>
                           <View style={styles.statusNextRow}>
                             <Text style={styles.tapToCycleText}>
                               {t.status === 'TODO'
-                                ? '→ Đang làm'
+                                ? tr("→ Đang làm")
                                 : t.status === 'IN_PROGRESS'
-                                ? '→ Đã xong'
-                                : '→ Cần làm'}
+                                ? tr("→ Đã xong")
+                                : tr("→ Cần làm")}
                             </Text>
                             <ArrowRight size={11} color={colors.subText} />
                           </View>
@@ -276,7 +278,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                       isHovered && { color: col.color, fontWeight: '800' },
                     ]}
                   >
-                    {col.title}
+                    {tr(col.title)}
                   </Text>
                 </View>
               );
@@ -306,7 +308,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     { color: getPriorityColor(draggingTask.priority) },
                   ]}
                 >
-                  {draggingTask.priority || 'MEDIUM'}
+                  {systemLabel(draggingTask.priority || 'MEDIUM')}
                 </Text>
               </View>
             </View>
@@ -314,7 +316,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               {draggingTask.title}
             </Text>
             <Text style={styles.floatingTargetStatus}>
-              Thả vào: {hoveredStatus || draggingTask.status}
+              {tr("Thả vào:")}{systemLabel(hoveredStatus || draggingTask.status)}
             </Text>
           </Animated.View>
         </View>

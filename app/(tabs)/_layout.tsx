@@ -1,3 +1,4 @@
+import { translate as tr, useTranslation } from '../../i18n';
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
@@ -12,6 +13,7 @@ import { useThemeStore } from '../../stores/useThemeStore';
 
 export default function TabLayout() {
   const { colors, isDark } = useThemeStore();
+  const { t } = useTranslation();
 
   return (
     <Tabs
@@ -38,8 +40,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Trang chủ',
-          tabBarLabel: 'Trang chủ',
+          title: t("Trang chủ"),
+          tabBarLabel: t("Trang chủ"),
           tabBarIcon: ({ focused }) => (
             <View
               style={[
@@ -60,8 +62,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="spaces"
         options={{
-          title: 'Không gian',
-          tabBarLabel: 'Không gian',
+          title: t("Không gian"),
+          tabBarLabel: t("Không gian"),
           tabBarIcon: ({ focused }) => (
             <View
               style={[
@@ -82,8 +84,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="tasks"
         options={{
-          title: 'Tất cả công việc',
-          tabBarLabel: 'Tất cả công việc',
+          title: t("Tất cả công việc"),
+          tabBarLabel: t("Tất cả công việc"),
           tabBarIcon: ({ focused }) => (
             <View
               style={[
@@ -104,8 +106,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: 'Bảng thông tin',
-          tabBarLabel: 'Bảng thông tin',
+          title: t("Bảng thông tin"),
+          tabBarLabel: t("Bảng thông tin"),
           tabBarIcon: ({ focused }) => (
             <View
               style={[
@@ -126,8 +128,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="notifications"
         options={{
-          title: 'Thông báo',
-          tabBarLabel: 'Thông báo',
+          title: t("Thông báo"),
+          tabBarLabel: t("Thông báo"),
           tabBarIcon: ({ focused }) => (
             <View
               style={[
@@ -149,14 +151,14 @@ export default function TabLayout() {
         name="profile"
         options={{
           href: null,
-          title: 'Tài Khoản & Cấu Hình',
+          title: t("Tài Khoản & Cấu Hình"),
         }}
       />
       <Tabs.Screen
         name="ai-chat"
         options={{
           href: null,
-          title: 'AI Chat Agents',
+          title: tr("AI Chat Agents"),
         }}
       />
       <Tabs.Screen

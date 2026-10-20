@@ -198,7 +198,9 @@ export const workspaceService = {
         id: Date.now(),
         threadId: 1,
         senderType: 'ASSISTANT',
-        messageContent: `[AI Agent ${data.agentType}] Đã nhận phân tích yêu cầu: "${data.prompt}". Bạn có muốn phân rã nhiệm vụ này thành các task cụ thể không?`,
+        systemGenerated: true,
+        messageContent: '[AI Agent {0}] Đã nhận phân tích yêu cầu: "{1}". Bạn có muốn phân rã nhiệm vụ này thành các task cụ thể không?',
+        systemMessageValues: { 0: data.agentType, 1: data.prompt },
         jsonPayload: data.agentType === 'REQUIREMENT' ? JSON.stringify([
           { title: 'Xây dựng màn hình đăng nhập & xác thực', description: 'Giao diện login, validate input', priority: 'HIGH' },
           { title: 'Cấu hình kết nối API Gateway', description: 'Tích hợp JWT Token Interceptor', priority: 'URGENT' },

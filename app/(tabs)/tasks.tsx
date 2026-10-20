@@ -1,3 +1,4 @@
+import { systemLabel, translate as tr, useTranslation as useSystemTranslation } from '../../i18n';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
@@ -35,6 +36,7 @@ export default function TasksScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { colors, isDark } = useThemeStore();
+  useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [tasksWithSpace, setTasksWithSpace] = useState<
@@ -94,18 +96,18 @@ export default function TasksScreen() {
         )
       );
     } catch (err) {
-      Alert.alert('Lỗi', 'Không thể cập nhật trạng thái công việc.');
+      Alert.alert(tr("Lỗi"), tr("Không thể cập nhật trạng thái công việc."));
     }
   };
 
   const handleOpenCreateModal = () => {
     if (allSpaces.length === 0) {
       Alert.alert(
-        'Chưa có Space',
-        'Vui lòng tạo một Không gian (Space) trước khi tạo nhiệm vụ mới.',
+        tr("Chưa có Space"),
+        tr("Vui lòng tạo một Không gian (Space) trước khi tạo nhiệm vụ mới."),
         [
-          { text: 'Hủy', style: 'cancel' },
-          { text: 'Tạo Không gian', onPress: () => router.push('/(tabs)/spaces') },
+          { text: tr("Hủy"), style: 'cancel' },
+          { text: tr("Tạo Không gian"), onPress: () => router.push('/(tabs)/spaces') },
         ]
       );
       return;
@@ -144,7 +146,7 @@ export default function TasksScreen() {
       <View style={styles.container}>
         {/* Header */}
         <JiraHeader
-          title="Tất cả công việc"
+          title={tr("Tất cả công việc")}
           rightActions={
             <>
               <TouchableOpacity
@@ -168,7 +170,7 @@ export default function TasksScreen() {
           >
             <User size={15} color={colors.subText} style={{ marginRight: 6 }} />
             <Text style={styles.filterPillText} numberOfLines={1}>
-              {selectedFilter}
+              {tr(selectedFilter)}
             </Text>
             <ChevronDown size={16} color={colors.subText} style={{ marginLeft: 6 }} />
           </TouchableOpacity>
@@ -209,18 +211,18 @@ export default function TasksScreen() {
         {loading ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator size="small" color={colors.primary} />
-            <Text style={styles.loadingText}>Đang tải danh sách công việc...</Text>
+            <Text style={styles.loadingText}>{tr("Đang tải danh sách công việc...")}</Text>
           </View>
         ) : filteredTasks.length === 0 ? (
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconCircle}>
               <CheckCircle2 size={36} color="#579DFF" />
             </View>
-            <Text style={styles.emptyTitle}>Chưa có công việc nào</Text>
+            <Text style={styles.emptyTitle}>{tr("Chưa có công việc nào")}</Text>
             <Text style={styles.emptySubtitle}>
               {allSpaces.length === 0
-                ? 'Hãy tạo Không gian trước để bắt đầu thêm và theo dõi công việc.'
-                : 'Bấm nút "+" ở góc phải trên để tạo nhiệm vụ đầu tiên.'}
+                ? tr("Hãy tạo Không gian trước để bắt đầu thêm và theo dõi công việc.")
+                : tr("Bấm nút \"+\" ở góc phải trên để tạo nhiệm vụ đầu tiên.")}
             </Text>
             <TouchableOpacity
               style={styles.emptyActionBtn}
@@ -228,7 +230,7 @@ export default function TasksScreen() {
               activeOpacity={0.8}
             >
               <Plus size={16} color="#FFFFFF" />
-              <Text style={styles.emptyActionBtnText}>Tạo công việc mới</Text>
+              <Text style={styles.emptyActionBtnText}>{tr("Tạo công việc mới")}</Text>
             </TouchableOpacity>
           </View>
         ) : viewMode === 'list' ? (
@@ -275,7 +277,7 @@ export default function TasksScreen() {
                       {task.title}
                     </Text>
                     <Text style={styles.issueSubtitle}>
-                      #{task.id} • {spaceName} • {task.status}
+                      #{task.id} • {spaceName} • {systemLabel(task.status)}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -297,9 +299,9 @@ export default function TasksScreen() {
                   (i) => i.task.status === status
                 );
                 return (
-                  <View key={status} style={styles.boardColumn}>
+                  <View key={systemLabel(status)} style={styles.boardColumn}>
                     <View style={styles.columnHeader}>
-                      <Text style={styles.columnTitle}>{status}</Text>
+                      <Text style={styles.columnTitle}>{systemLabel(status)}</Text>
                       <View style={styles.columnCountBadge}>
                         <Text style={styles.columnCountText}>
                           {columnTasks.length}
@@ -310,7 +312,7 @@ export default function TasksScreen() {
                     <ScrollView showsVerticalScrollIndicator={false}>
                       {columnTasks.length === 0 ? (
                         <View style={styles.columnEmptyBox}>
-                          <Text style={styles.columnEmptyText}>Không có task</Text>
+                          <Text style={styles.columnEmptyText}>{tr("Không có task")}</Text>
                         </View>
                       ) : (
                         columnTasks.map(({ task, spaceName }) => (
@@ -352,10 +354,10 @@ export default function TasksScreen() {
             onPress={() => setFilterDropdownVisible(false)}
           >
             <View style={styles.dropdownMenu}>
-              <Text style={styles.dropdownTitle}>Bộ lọc công việc</Text>
+              <Text style={styles.dropdownTitle}>{tr("Bộ lọc công việc")}</Text>
               {filterOptions.map((opt) => (
                 <TouchableOpacity
-                  key={opt}
+                  key={tr(opt)}
                   style={styles.dropdownItem}
                   onPress={() => {
                     setSelectedFilter(opt);
@@ -368,7 +370,7 @@ export default function TasksScreen() {
                       selectedFilter === opt && styles.dropdownItemTextActive,
                     ]}
                   >
-                    {opt}
+                    {tr(opt)}
                   </Text>
                 </TouchableOpacity>
               ))}
