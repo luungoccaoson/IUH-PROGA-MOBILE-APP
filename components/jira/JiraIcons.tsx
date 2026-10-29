@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Path, Circle, Rect, G, Ellipse } from 'react-native-svg';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
 interface IconProps {
   size?: number;
@@ -86,6 +86,21 @@ export function JiraBellIcon({ size = 24, color = '#8C9BAB' }: IconProps) {
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+// Jira User Profile Icon
+export function JiraUserIcon({ size = 24, color = '#8C9BAB' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="8" r="4" stroke={color} strokeWidth={2} />
+      <Path
+        d="M5 20C5 16.6863 8.13401 14 12 14C15.866 14 19 16.6863 19 20"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
       />
     </Svg>
   );

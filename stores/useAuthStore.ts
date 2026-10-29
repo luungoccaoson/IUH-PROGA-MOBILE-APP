@@ -8,6 +8,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   setAuth: (user: User, accessToken: string, refreshToken?: string) => Promise<void>;
+  updateUser: (user: User) => Promise<void>;
   loadAuthFromStorage: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -29,6 +30,15 @@ export const useAuthStore = create<AuthState>((set) => ({
       console.error('Failed to save auth to AsyncStorage', e);
     }
     set({ user, accessToken, isAuthenticated: true, isLoading: false });
+  },
+
+  updateUser: async (user: User) => {
+    try {
+      await AsyncStorage.setItem('@proga_user', JSON.stringify(user));
+    } catch (e) {
+      console.error('Failed to update user in AsyncStorage', e);
+    }
+    set({ user });
   },
 
   loadAuthFromStorage: async () => {

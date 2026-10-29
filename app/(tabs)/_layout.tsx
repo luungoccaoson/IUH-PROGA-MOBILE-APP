@@ -8,6 +8,7 @@ import {
   JiraWorkIcon,
   JiraBoardIcon,
   JiraBellIcon,
+  JiraUserIcon,
 } from '../../components/jira/JiraIcons';
 import { useThemeStore } from '../../stores/useThemeStore';
 
@@ -22,7 +23,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.subText,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600',
           marginTop: 2,
         },
@@ -146,14 +147,29 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Hidden secondary screens (still accessible via navigation) */}
+      {/* Tab 6: Hồ sơ cá nhân */}
       <Tabs.Screen
         name="profile"
         options={{
-          href: null,
-          title: t("Tài Khoản & Cấu Hình"),
+          title: t("Hồ sơ"),
+          tabBarLabel: t("Hồ sơ"),
+          tabBarIcon: ({ focused }) => (
+            <View
+              style={[
+                focused ? styles.activePill : styles.inactiveWrap,
+                focused && { backgroundColor: isDark ? '#1D3B6A' : '#DEEBFF' },
+              ]}
+            >
+              <JiraUserIcon
+                size={20}
+                color={focused ? (isDark ? '#FFFFFF' : '#0052CC') : colors.subText}
+              />
+            </View>
+          ),
         }}
       />
+
+      {/* Hidden secondary screens (still accessible via navigation) */}
       <Tabs.Screen
         name="ai-chat"
         options={{
@@ -173,15 +189,15 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   activePill: {
-    width: 52,
-    height: 30,
-    borderRadius: 15,
+    width: 44,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   inactiveWrap: {
-    width: 52,
-    height: 30,
+    width: 44,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
