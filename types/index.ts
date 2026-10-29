@@ -1,0 +1,132 @@
+// Enums
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type AgentType = 'REQUIREMENT' | 'PM' | 'TECHNICAL_ADVISOR';
+export type RoleName = 'ADMIN' | 'PM' | 'MEMBER';
+
+// User & Auth
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  isAdmin: boolean;
+  createdAt: string;
+  fullName?: string;
+  displayName?: string;
+  avatarUrl?: string;
+  phoneNumber?: string;
+  jobTitle?: string;
+  bio?: string;
+}
+
+export interface SpaceMember {
+  id?: {
+    spaceId: number;
+    userId: number;
+  };
+  spaceId?: number;
+  userId?: number;
+  roleId: number;
+  joinedAt?: string;
+}
+
+export interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: User;
+}
+
+// Workspace & Space
+export interface Workspace {
+  id: number;
+  name: string;
+  description?: string;
+  ownerId: number;
+  createdAt: string;
+}
+
+export interface WorkspaceMember {
+  workspaceId: number;
+  userId: number;
+  roleId: number;
+  status: "ACCEPTED" | "PENDING" | "REJECTED";
+  joinedAt: string;
+}
+
+export interface ClassifiedWorkspaces {
+  ownedWorkspaces: Workspace[];
+  joinedWorkspaces: Workspace[];
+  pendingWorkspaces: Workspace[];
+}
+
+export interface Space {
+  id: number;
+  workspaceId: number;
+  name: string;
+  startDate?: string;
+  endDate?: string;
+  createdAt: string;
+}
+
+// Task & Kanban
+export interface Task {
+  id: number;
+  spaceId: number;
+  title: string;
+  description?: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  ownerId?: number; // Assignee ID
+  ownerName?: string;
+  startDate?: string;
+  dueDate?: string;
+  createdAt: string;
+}
+
+export interface TaskNote {
+  id: number;
+  taskId: number;
+  authorId: number;
+  authorName: string;
+  noteContent: string;
+  createdAt: string;
+}
+
+export interface WorkspaceLog {
+  id: number;
+  workspaceId: number;
+  taskId?: number;
+  userId: number;
+  actionType: string;
+  oldValue?: string;
+  newValue?: string;
+  logMessage: string;
+  createdAt: string;
+}
+
+// AI Chat
+export interface ChatMessage {
+  id: number;
+  threadId: number;
+  senderType: 'USER' | 'ASSISTANT' | 'SYSTEM';
+  messageContent: string;
+  // Local system examples can be translated; real chat content stays untouched.
+  systemGenerated?: boolean;
+  systemMessageValues?: Record<string, string | number>;
+  jsonPayload?: string; // Task Deconstruction preview JSON
+  createdAt: string;
+}
+
+export interface DeconstructedTaskItem {
+  title: string;
+  description?: string;
+  priority?: TaskPriority;
+}
+
+// Generic API Response Wrapper
+export interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data: T;
+  timestamp?: string;
+}
