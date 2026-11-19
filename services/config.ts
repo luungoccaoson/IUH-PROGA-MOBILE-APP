@@ -15,7 +15,8 @@ export const getDefaultApiUrl = (): string => {
   }
 
   if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:8080/api/v1';
+    // 192.168.1.22 is the current development machine IP on LAN
+    return 'http://192.168.1.22:8080/api/v1';
   }
   return 'http://localhost:8080/api/v1';
 };
