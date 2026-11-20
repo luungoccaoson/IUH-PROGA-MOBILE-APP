@@ -127,6 +127,94 @@ export const translations = {
     "en": "Account",
     "zh": "账号"
   },
+  "Hồ sơ": {
+    "en": "Profile",
+    "zh": "个人资料"
+  },
+  "Hồ sơ cá nhân": {
+    "en": "User Profile",
+    "zh": "个人资料"
+  },
+  "Thông tin cơ bản": {
+    "en": "Basic Information",
+    "zh": "基本信息"
+  },
+  "Họ và tên": {
+    "en": "Full name",
+    "zh": "姓名"
+  },
+  "Tên đăng nhập": {
+    "en": "Username",
+    "zh": "用户名"
+  },
+  "Email liên hệ": {
+    "en": "Email address",
+    "zh": "联系邮箱"
+  },
+  "Số điện thoại": {
+    "en": "Phone number",
+    "zh": "电话号码"
+  },
+  "Chức danh / Vị trí": {
+    "en": "Job title",
+    "zh": "职位"
+  },
+  "Vai trò hệ thống": {
+    "en": "System role",
+    "zh": "系统角色"
+  },
+  "Mã người dùng": {
+    "en": "User ID",
+    "zh": "用户编号"
+  },
+  "Ngày tham gia": {
+    "en": "Joined date",
+    "zh": "加入日期"
+  },
+  "Giới thiệu bản thân": {
+    "en": "Bio",
+    "zh": "个人简介"
+  },
+  "Chưa cập nhật": {
+    "en": "Not updated",
+    "zh": "未更新"
+  },
+  "Thành viên dự án": {
+    "en": "Project Member",
+    "zh": "项目成员"
+  },
+  "Quản trị viên (Admin)": {
+    "en": "Administrator (Admin)",
+    "zh": "系统管理员 (Admin)"
+  },
+  "Thành viên (Member)": {
+    "en": "Member",
+    "zh": "普通成员 (Member)"
+  },
+  "Đang hoạt động": {
+    "en": "Active",
+    "zh": "在线"
+  },
+  "Tổng quan hoạt động": {
+    "en": "Activity Overview",
+    "zh": "活动概览"
+  },
+  "Workspaces": {
+    "en": "Workspaces",
+    "zh": "工作区"
+  },
+  "Spaces": {
+    "en": "Spaces",
+    "zh": "空间"
+  },
+  "Công việc": {
+    "en": "Tasks",
+    "zh": "任务"
+  },
+  "Tùy chỉnh & Cài đặt": {
+    "en": "Preferences & Settings",
+    "zh": "偏好与设置"
+  },
   "Thêm trang web": {
     "en": "Add site",
     "zh": "添加站点"
@@ -190,6 +278,14 @@ export const translations = {
   "Đăng xuất tài khoản": {
     "en": "Sign out",
     "zh": "退出登录"
+  },
+  "Đang đăng xuất...": {
+    "en": "Signing out...",
+    "zh": "正在退出..."
+  },
+  "Phiên đăng nhập hiện tại sẽ kết thúc và bạn sẽ quay về màn hình đăng nhập.": {
+    "en": "Your current session will end and you will be returned to the sign-in screen.",
+    "zh": "当前会话将结束，您将返回登录页面。"
   },
   "Cài Đặt Backend Gateway": {
     "en": "Backend gateway settings",

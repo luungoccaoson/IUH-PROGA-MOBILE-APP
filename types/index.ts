@@ -130,3 +130,29 @@ export interface ApiResponse<T> {
   data: T;
   timestamp?: string;
 }
+
+// Notification Domain
+export interface NotificationItem {
+  id: number;
+  userId: number;
+  workspaceId?: number;
+  title: string;
+  content: string;
+  isRead: boolean;
+  typeId?: number;
+  typeCode?: string;
+  typeLabel?: string;
+  createdAt: string;
+}
+
+// App Version Update Domain
+export interface AppVersionInfo {
+  latestVersion: string;
+  latestVersionCode: number;
+  minRequiredVersion: string;
+  forceUpdate: boolean;
+  downloadUrl: string;
+  releaseNotes: string;
+  releaseDate: string;
+}
+

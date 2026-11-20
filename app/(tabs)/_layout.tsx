@@ -1,5 +1,5 @@
 import { translate as tr, useTranslation } from '../../i18n';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import {
@@ -8,12 +8,38 @@ import {
   JiraWorkIcon,
   JiraBoardIcon,
   JiraBellIcon,
+  JiraUserIcon,
 } from '../../components/jira/JiraIcons';
 import { useThemeStore } from '../../stores/useThemeStore';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { notificationService } from '../../services/notification.service';
+import { workspaceService } from '../../services/workspace.service';
 
 export default function TabLayout() {
   const { colors, isDark } = useThemeStore();
   const { t } = useTranslation();
+  const { user } = useAuthStore();
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const fetchBadge = async () => {
+      try {
+        const [notifCount, wsData] = await Promise.all([
+          notificationService.getUnreadCount(user.id),
+          workspaceService.getClassifiedWorkspaces(user.id).catch(() => ({ pendingWorkspaces: [] })),
+        ]);
+        const total = (notifCount || 0) + (wsData.pendingWorkspaces?.length || 0);
+        setUnreadCount(total);
+      } catch (e) {
+        // Ignore silent error
+      }
+    };
+
+    fetchBadge();
+    const interval = setInterval(fetchBadge, 30000); // Check every 30s
+    return () => clearInterval(interval);
+  }, [user?.id]);
 
   return (
     <Tabs
@@ -22,7 +48,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.subText,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600',
           marginTop: 2,
         },
@@ -130,6 +156,13 @@ export default function TabLayout() {
         options={{
           title: t("Thông báo"),
           tabBarLabel: t("Thông báo"),
+          tabBarBadge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: '#DC2626',
+            color: '#FFFFFF',
+            fontSize: 10,
+            fontWeight: 'bold',
+          },
           tabBarIcon: ({ focused }) => (
             <View
               style={[
@@ -146,14 +179,29 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Hidden secondary screens (still accessible via navigation) */}
+      {/* Tab 6: Hồ sơ cá nhân */}
       <Tabs.Screen
         name="profile"
         options={{
-          href: null,
-          title: t("Tài Khoản & Cấu Hình"),
+          title: t("Hồ sơ"),
+          tabBarLabel: t("Hồ sơ"),
+          tabBarIcon: ({ focused }) => (
+            <View
+              style={[
+                focused ? styles.activePill : styles.inactiveWrap,
+                focused && { backgroundColor: isDark ? '#1D3B6A' : '#DEEBFF' },
+              ]}
+            >
+              <JiraUserIcon
+                size={20}
+                color={focused ? (isDark ? '#FFFFFF' : '#0052CC') : colors.subText}
+              />
+            </View>
+          ),
         }}
       />
+
+      {/* Hidden secondary screens (still accessible via navigation) */}
       <Tabs.Screen
         name="ai-chat"
         options={{
@@ -173,15 +221,15 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   activePill: {
-    width: 52,
-    height: 30,
-    borderRadius: 15,
+    width: 44,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   inactiveWrap: {
-    width: 52,
-    height: 30,
+    width: 44,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
