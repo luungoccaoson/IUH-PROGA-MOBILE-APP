@@ -1,5 +1,5 @@
 import { translate as tr, useTranslation } from '../../i18n';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import {
@@ -11,35 +11,10 @@ import {
   JiraUserIcon,
 } from '../../components/jira/JiraIcons';
 import { useThemeStore } from '../../stores/useThemeStore';
-import { useAuthStore } from '../../stores/useAuthStore';
-import { notificationService } from '../../services/notification.service';
-import { workspaceService } from '../../services/workspace.service';
 
 export default function TabLayout() {
   const { colors, isDark } = useThemeStore();
   const { t } = useTranslation();
-  const { user } = useAuthStore();
-  const [unreadCount, setUnreadCount] = useState<number>(0);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    const fetchBadge = async () => {
-      try {
-        const [notifCount, wsData] = await Promise.all([
-          notificationService.getUnreadCount(user.id),
-          workspaceService.getClassifiedWorkspaces(user.id).catch(() => ({ pendingWorkspaces: [] })),
-        ]);
-        const total = (notifCount || 0) + (wsData.pendingWorkspaces?.length || 0);
-        setUnreadCount(total);
-      } catch (e) {
-        // Ignore silent error
-      }
-    };
-
-    fetchBadge();
-    const interval = setInterval(fetchBadge, 30000); // Check every 30s
-    return () => clearInterval(interval);
-  }, [user?.id]);
 
   return (
     <Tabs
@@ -156,13 +131,6 @@ export default function TabLayout() {
         options={{
           title: t("Thông báo"),
           tabBarLabel: t("Thông báo"),
-          tabBarBadge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : undefined,
-          tabBarBadgeStyle: {
-            backgroundColor: '#DC2626',
-            color: '#FFFFFF',
-            fontSize: 10,
-            fontWeight: 'bold',
-          },
           tabBarIcon: ({ focused }) => (
             <View
               style={[

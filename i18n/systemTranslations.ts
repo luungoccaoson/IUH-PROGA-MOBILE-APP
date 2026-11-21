@@ -1122,5 +1122,765 @@ export const systemTranslations = {
   "Quản lý dự án": {
     "en": "Project manager",
     "zh": "项目经理"
+  },
+  "Trợ lý điều phối": {
+    "en": "Assistant Coordinator",
+    "zh": "协调助理"
+  },
+  "Sắp tới": {
+    "en": "Upcoming",
+    "zh": "即将开始"
+  },
+  "Đang diễn ra": {
+    "en": "Active",
+    "zh": "进行中"
+  },
+  "Đã đóng": {
+    "en": "Closed",
+    "zh": "已关闭"
+  },
+  "Cần cấp quyền": {
+    "en": "Permission required",
+    "zh": "需要权限"
+  },
+  "Vui lòng cho phép quyền thông báo trong cài đặt để nhận thông báo đẩy.": {
+    "en": "Please enable notification permissions in settings to receive push notifications.",
+    "zh": "请在设置中允许通知权限以接收推送通知。"
+  },
+  "🔔 PROGA: Có lời mời tham gia dự án mới!": {
+    "en": "🔔 PROGA: New project invitation!",
+    "zh": "🔔 PROGA：收到新的项目邀请！"
+  },
+  "Bạn vừa nhận được một lời mời tham gia Workspace mới trên hệ thống.": {
+    "en": "You have received a new Workspace invitation.",
+    "zh": "您收到了一条新的工作区邀请。"
+  },
+  "Ứng dụng đã là bản mới nhất": {
+    "en": "App is up to date",
+    "zh": "应用已是最新版本"
+  },
+  "Bạn đang sử dụng phiên bản PROGA Mobile v{0}. Hệ thống chưa có bản cập nhật nào mới hơn.": {
+    "en": "You are using PROGA Mobile v{0}. No newer updates are available.",
+    "zh": "您正在使用 PROGA Mobile v{0}，暂无更新版本。"
+  },
+  "Không thể kiểm tra bản cập nhật. Vui lòng kiểm tra lại kết nối mạng.": {
+    "en": "Unable to check for updates. Please check your network connection.",
+    "zh": "无法检查更新，请检查网络连接。"
+  },
+  "Đã đánh dấu tất cả thông báo là đã đọc.": {
+    "en": "Marked all notifications as read.",
+    "zh": "已将所有通知标记为已读。"
+  },
+  "Không thể đánh dấu đã đọc tất cả thông báo.": {
+    "en": "Unable to mark all notifications as read.",
+    "zh": "无法将所有通知标记为已读。"
+  },
+  "Lời mời": {
+    "en": "Invitations",
+    "zh": "邀请"
+  },
+  "Chưa đọc": {
+    "en": "Unread",
+    "zh": "未读"
+  },
+  "Lời mời tham gia Workspace": {
+    "en": "Workspace Invitation",
+    "zh": "工作区邀请"
+  },
+  "Nhận ngày:": {
+    "en": "Received:",
+    "zh": "接收日期："
+  },
+  "Thông báo cập nhật": {
+    "en": "Update notification",
+    "zh": "更新通知"
+  },
+  "THÔNG BÁO": {
+    "en": "NOTIFICATION",
+    "zh": "通知"
+  },
+  "Không có thông báo mới": {
+    "en": "No new notifications",
+    "zh": "暂无新通知"
+  },
+  "Tất cả các thông báo cập nhật công việc, phân công và lời mời tham gia dự án sẽ hiển thị tại đây.": {
+    "en": "All task updates, assignments, and project invitations will appear here.",
+    "zh": "所有任务更新、分配和项目邀请都将显示在这里。"
+  },
+  "Không thể nhận công việc này.": {
+    "en": "Unable to claim this task.",
+    "zh": "无法认领此任务。"
+  },
+  "Chưa giao (": {
+    "en": "Unassigned (",
+    "zh": "未分配 ("
+  },
+  "Mọi trạng thái": {
+    "en": "All statuses",
+    "zh": "所有状态"
+  },
+  "Chờ duyệt": {
+    "en": "In review",
+    "zh": "待审核"
+  },
+  "Đã xong": {
+    "en": "Done",
+    "zh": "已完成"
+  },
+  "CỦA TÔI": {
+    "en": "MINE",
+    "zh": "我的"
+  },
+  "Đạt yêu cầu": {
+    "en": "Verified",
+    "zh": "已达标"
+  },
+  "Backlog": {
+    "en": "Backlog",
+    "zh": "待办列表"
+  },
+  "+ Nhận việc": {
+    "en": "+ Claim",
+    "zh": "+ 认领"
+  },
+  "Chi tiết →": {
+    "en": "Details →",
+    "zh": "详情 →"
+  },
+  "Phân quyền thao tác": {
+    "en": "Action permission",
+    "zh": "操作权限"
+  },
+  "Thao tác không được phép.": {
+    "en": "Action not permitted.",
+    "zh": "不允许此操作。"
+  },
+  "Không thể cập nhật trạng thái xác nhận Đạt yêu cầu.": {
+    "en": "Unable to update verification status.",
+    "zh": "无法更新达标确认状态。"
+  },
+  "Không thể tạo Sprint mới.": {
+    "en": "Unable to create sprint.",
+    "zh": "无法创建新冲刺。"
+  },
+  "Không thể cập nhật trạng thái Sprint.": {
+    "en": "Unable to update sprint status.",
+    "zh": "无法更新冲刺状态。"
+  },
+  "Không thể thay đổi vai trò thành viên.": {
+    "en": "Unable to change member role.",
+    "zh": "无法更改成员角色。"
+  },
+  "Product Backlog (Chưa xếp Sprint)": {
+    "en": "Product Backlog (Unscheduled)",
+    "zh": "产品待办列表（未排入冲刺）"
+  },
+  "Trợ lý": {
+    "en": "Assistant",
+    "zh": "助理"
+  },
+  "Sprint & Việc": {
+    "en": "Sprints & Tasks",
+    "zh": "冲刺与任务"
+  },
+  "Mindmap": {
+    "en": "Mindmap",
+    "zh": "思维导图"
+  },
+  "Tạo Task": {
+    "en": "New Task",
+    "zh": "新建任务"
+  },
+  "+ Tạo Sprint": {
+    "en": "+ New Sprint",
+    "zh": "+ 新建冲刺"
+  },
+  "Phân chia việc": {
+    "en": "Assign tasks",
+    "zh": "分配任务"
+  },
+  "hoàn thành": {
+    "en": "completed",
+    "zh": "已完成"
+  },
+  "Bắt đầu Sprint": {
+    "en": "Start Sprint",
+    "zh": "开始冲刺"
+  },
+  "Kết thúc Sprint": {
+    "en": "Complete Sprint",
+    "zh": "结束冲刺"
+  },
+  "Không có công việc nào trong giai đoạn này.": {
+    "en": "No tasks in this sprint.",
+    "zh": "此阶段暂无任务。"
+  },
+  "Bắt đầu làm →": {
+    "en": "Start work →",
+    "zh": "开始处理 →"
+  },
+  "Gửi duyệt →": {
+    "en": "Submit review →",
+    "zh": "提交审核 →"
+  },
+  "Duyệt Done": {
+    "en": "Approve Done",
+    "zh": "批准完成"
+  },
+  "Đã đạt": {
+    "en": "Verified",
+    "zh": "已达标"
+  },
+  "Đánh dấu Đạt": {
+    "en": "Mark Verified",
+    "zh": "标记达标"
+  },
+  "CHỜ DUYỆT": {
+    "en": "IN REVIEW",
+    "zh": "待审核"
+  },
+  "Số lượng Sprint:": {
+    "en": "Total Sprints:",
+    "zh": "冲刺数量："
+  },
+  "Trợ lý (Assistant)": {
+    "en": "Assistant",
+    "zh": "协调助理 (Assistant)"
+  },
+  "Chuyển về Thành viên (Member)": {
+    "en": "Set as Member",
+    "zh": "设为普通成员 (Member)"
+  },
+  "Cấp quyền Trợ lý (Assistant)": {
+    "en": "Promote to Assistant",
+    "zh": "设为协调助理 (Assistant)"
+  },
+  "Xác nhận tự nhận công việc": {
+    "en": "Confirm claiming task",
+    "zh": "确认认领任务"
+  },
+  "Nhận việc ngay": {
+    "en": "Claim now",
+    "zh": "立即认领"
+  },
+  "Tạo Giai Đoạn (Sprint) Mới": {
+    "en": "Create New Sprint",
+    "zh": "创建新冲刺 (Sprint)"
+  },
+  "Mục tiêu của Sprint...": {
+    "en": "Sprint goal...",
+    "zh": "冲刺目标…"
+  },
+  "Tạo Sprint": {
+    "en": "Create Sprint",
+    "zh": "创建冲刺"
+  },
+  "Bắt buộc cập nhật": {
+    "en": "Update required",
+    "zh": "必须更新"
+  },
+  "Bản cập nhật mới": {
+    "en": "New update",
+    "zh": "新版本更新"
+  },
+  "Phiên bản {0} đã sẵn sàng!": {
+    "en": "Version {0} is ready!",
+    "zh": "版本 {0} 已就绪！"
+  },
+  "Hiện tại": {
+    "en": "Current",
+    "zh": "当前版本"
+  },
+  "Mới nhất": {
+    "en": "Latest",
+    "zh": "最新版本"
+  },
+  "Có gì mới trong bản này?": {
+    "en": "What's new in this version?",
+    "zh": "此版本有哪些更新？"
+  },
+  "Bản cập nhật bao gồm các cải tiến hiệu năng và sửa lỗi trải nghiệm người dùng.": {
+    "en": "This update includes performance improvements and bug fixes.",
+    "zh": "此更新包含性能优化与用户体验问题修复。"
+  },
+  "Bạn cần nâng cấp lên phiên bản này để tiếp tục sử dụng ứng dụng PROGA.": {
+    "en": "You need to upgrade to this version to continue using PROGA.",
+    "zh": "您需要升级到此版本才能继续使用 PROGA。"
+  },
+  "Để sau": {
+    "en": "Later",
+    "zh": "稍后"
+  },
+  "Cập nhật ngay": {
+    "en": "Update now",
+    "zh": "立即更新"
+  },
+  "THUỘC GIAI ĐOẠN (SPRINT)": {
+    "en": "SPRINT",
+    "zh": "所属冲刺 (SPRINT)"
+  },
+  "GIAO CHO THÀNH VIÊN": {
+    "en": "ASSIGN TO MEMBER",
+    "zh": "分配给成员"
+  },
+  "TRỄ HẠN": {
+    "en": "OVERDUE",
+    "zh": "已逾期"
+  },
+  "bước": {
+    "en": "steps",
+    "zh": "步"
+  },
+  "Trợ lý xác nhận Đạt": {
+    "en": "Verified by Assistant",
+    "zh": "助理确认达标"
+  },
+  "Chưa có người làm": {
+    "en": "Unassigned",
+    "zh": "暂无人负责"
+  },
+  "Bắt đầu làm": {
+    "en": "Start work",
+    "zh": "开始处理"
+  },
+  "← Cần làm": {
+    "en": "← To Do",
+    "zh": "← 待办"
+  },
+  "Gửi Chờ duyệt": {
+    "en": "Submit for Review",
+    "zh": "提交待审"
+  },
+  "Duyệt Đã xong": {
+    "en": "Approve Done",
+    "zh": "批准完成"
+  },
+  "Yêu cầu sửa": {
+    "en": "Request changes",
+    "zh": "要求修改"
+  },
+  "✓ Đã đánh dấu Đạt": {
+    "en": "✓ Marked Verified",
+    "zh": "✓ 已标记达标"
+  },
+  "Đánh dấu Đạt yêu cầu": {
+    "en": "Mark as Verified",
+    "zh": "标记为达标"
+  },
+  "Đang chờ Trợ lý / PM kiểm tra duyệt": {
+    "en": "Waiting for Assistant / PM review",
+    "zh": "等待助理／项目经理审核"
+  },
+  "Rút lại": {
+    "en": "Withdraw",
+    "zh": "撤回"
+  },
+  "Đã được PM nghiệm thu hoàn thành": {
+    "en": "Approved as Done by PM",
+    "zh": "项目经理已验收完成"
+  },
+  "Việc của tôi": {
+    "en": "My tasks",
+    "zh": "我的任务"
+  },
+  "Mọi Sprint": {
+    "en": "All Sprints",
+    "zh": "所有冲刺"
+  },
+  "Cột ngang": {
+    "en": "Board columns",
+    "zh": "横向看板"
+  },
+  "Trải dọc": {
+    "en": "Vertical stack",
+    "zh": "纵向展开"
+  },
+  "Tất cả 4 cột (": {
+    "en": "All 4 columns (",
+    "zh": "全部 4 列 ("
+  },
+  "PM duyệt": {
+    "en": "PM approval",
+    "zh": "PM 审批"
+  },
+  "Trợ lý / PM": {
+    "en": "Assistant / PM",
+    "zh": "助理 / PM"
+  },
+  "Chưa có công việc ở cột này": {
+    "en": "No tasks in this column",
+    "zh": "此列暂无任务"
+  },
+  "Sơ đồ Mindmap & Toàn cảnh Space": {
+    "en": "Space Mindmap & Overview",
+    "zh": "空间思维导图与全景"
+  },
+  "Cây phân rã WBS (Space ➔ Sprint ➔ Task), vị trí cá nhân & đặc tả SRS": {
+    "en": "WBS Breakdown Tree (Space ➔ Sprint ➔ Task), personal radar & mini-SRS",
+    "zh": "WBS 分解树（空间 ➔ 冲刺 ➔ 任务）、个人位置与 SRS 规范"
+  },
+  "Sơ đồ Mindmap": {
+    "en": "Mindmap Tree",
+    "zh": "思维导图"
+  },
+  "Vị trí & Nhóm": {
+    "en": "My Position & Team",
+    "zh": "我的位置与团队"
+  },
+  "SRS Mini": {
+    "en": "Mini-SRS",
+    "zh": "精简 SRS"
+  },
+  "GỐC KHÔNG GIAN (ROOT)": {
+    "en": "SPACE ROOT",
+    "zh": "空间根节点 (ROOT)"
+  },
+  "Chưa có công việc trong nhánh này": {
+    "en": "No tasks in this branch",
+    "zh": "此分支暂无任务"
+  },
+  "Đạt": {
+    "en": "Verified",
+    "zh": "达标"
+  },
+  "Vị trí công việc của bạn (": {
+    "en": "Your task position (",
+    "zh": "您的任务位置 ("
+  },
+  "Đang làm & Chờ duyệt (": {
+    "en": "In Progress & Review (",
+    "zh": "进行中与待审 ("
+  },
+  "Hiện chưa có công việc nào đang làm.": {
+    "en": "No tasks currently in progress.",
+    "zh": "当前没有进行中的任务。"
+  },
+  "Sẽ làm tiếp theo (": {
+    "en": "Up next / To Do (",
+    "zh": "接下来待办 ("
+  },
+  "Không có công việc tồn đọng.": {
+    "en": "No pending tasks.",
+    "zh": "没有待办积压任务。"
+  },
+  "Đã hoàn thành (": {
+    "en": "Completed (",
+    "zh": "已完成 ("
+  },
+  "Chưa hoàn thành công việc nào.": {
+    "en": "No completed tasks yet.",
+    "zh": "尚未完成任何任务。"
+  },
+  "Đồng đội đang làm việc gì? (": {
+    "en": "What are teammates working on? (",
+    "zh": "团队成员正在做什么？("
+  },
+  "Chưa có thành viên nào khác trong Space.": {
+    "en": "No other members in this Space.",
+    "zh": "此空间暂无其他成员。"
+  },
+  "xong": {
+    "en": "done",
+    "zh": "完成"
+  },
+  "Hiện chưa có việc ở trạng thái Đang làm": {
+    "en": "No task currently In Progress",
+    "zh": "当前没有进行中的任务"
+  },
+  "Cảnh báo rủi ro & Trễ hạn (": {
+    "en": "Risk & Overdue Alerts (",
+    "zh": "风险与逾期预警 ("
+  },
+  "Dự án an toàn, không có công việc trễ hạn.": {
+    "en": "Project is on track with no overdue tasks.",
+    "zh": "项目进度安全，无逾期任务。"
+  },
+  "1. Thực thể Dữ liệu Cốt lõi (Master Data)": {
+    "en": "1. Core Master Data Entities",
+    "zh": "1. 核心主数据实体 (Master Data)"
+  },
+  "2. Ma trận Yêu cầu Chức năng (FR Matrix)": {
+    "en": "2. Functional Requirements Matrix (FR)",
+    "zh": "2. 功能需求矩阵 (FR Matrix)"
+  },
+  "Yêu cầu chỉnh sửa công việc": {
+    "en": "Request task revision",
+    "zh": "要求修改任务"
+  },
+  "Xác nhận chuyển trạng thái": {
+    "en": "Confirm status change",
+    "zh": "确认更改状态"
+  },
+  "Công việc sẽ được trả về trạng thái Đang làm để thành viên phụ trách cập nhật lại.": {
+    "en": "The task will be returned to In Progress for the assignee to revise.",
+    "zh": "任务将退回至“进行中”状态，供负责人修改。"
+  },
+  "Bạn có chắc chắn muốn cập nhật trạng thái công việc này không?": {
+    "en": "Are you sure you want to change the status of this task?",
+    "zh": "确定要更新此任务的状态吗？"
+  },
+  "Ghi chú / Lý do cần chỉnh sửa:": {
+    "en": "Revision note / reason:",
+    "zh": "修改备注／原因："
+  },
+  "Nhập nội dung cần thành viên bổ sung hoặc sửa lại...": {
+    "en": "Enter details for the member to revise...",
+    "zh": "输入需要成员补充或修改的内容…"
+  },
+  "Xác nhận trả việc": {
+    "en": "Confirm return",
+    "zh": "确认退回"
+  },
+  "Xác nhận chuyển": {
+    "en": "Confirm change",
+    "zh": "确认更改"
+  },
+  "Phân chia công việc": {
+    "en": "Task Distribution",
+    "zh": "分配任务"
+  },
+  "Phân công tự động theo chuyên môn hoặc gán thủ công": {
+    "en": "Auto-assign by skill & workload or assign manually",
+    "zh": "按专长与负载均衡自动分配或手动指派"
+  },
+  "Tự động (AI Cân bằng)": {
+    "en": "Auto (AI Balanced)",
+    "zh": "自动分配（AI 均衡）"
+  },
+  "Thủ công (Gán trực tiếp)": {
+    "en": "Manual (Direct Assign)",
+    "zh": "手动指派"
+  },
+  "Chỉ việc chưa giao": {
+    "en": "Unassigned tasks only",
+    "zh": "仅未分配任务"
+  },
+  "Tất cả việc chưa xong": {
+    "en": "All open tasks",
+    "zh": "所有未完成任务"
+  },
+  "Tất cả Sprint": {
+    "en": "All Sprints",
+    "zh": "所有冲刺"
+  },
+  "PHÂN BỔ TẢI THÀNH VIÊN (": {
+    "en": "MEMBER WORKLOAD (",
+    "zh": "成员工作负载 ("
+  },
+  "Đang giữ:": {
+    "en": "Holding:",
+    "zh": "当前持有："
+  },
+  "mới": {
+    "en": "new",
+    "zh": "新增"
+  },
+  "ĐỀ XUẤT PHÂN CÔNG (": {
+    "en": "PROPOSED ASSIGNMENTS (",
+    "zh": "分配建议 ("
+  },
+  "Không có công việc cần phân công": {
+    "en": "No tasks to assign",
+    "zh": "没有需要分配的任务"
+  },
+  "Tất cả công việc trong phạm vi đã chọn đều đã có người phụ trách.": {
+    "en": "All tasks in the selected scope are already assigned.",
+    "zh": "所选范围内的所有任务均已指派负责人。"
+  },
+  "Đã chỉnh thủ công": {
+    "en": "Manually overridden",
+    "zh": "已手动调整"
+  },
+  "AI đề xuất • Chạm để đổi người": {
+    "en": "AI suggested • Tap to change",
+    "zh": "AI 建议 • 点击更换成员"
+  },
+  "Đổi người": {
+    "en": "Change",
+    "zh": "更换"
+  },
+  "CHỌN THÀNH VIÊN CHO TỪNG CÔNG VIỆC (": {
+    "en": "SELECT MEMBER FOR EACH TASK (",
+    "zh": "为每个任务选择成员 ("
+  },
+  "Không có công việc trong mục này": {
+    "en": "No tasks in this section",
+    "zh": "此部分暂无任务"
+  },
+  "Xác nhận phân công (": {
+    "en": "Confirm assignments (",
+    "zh": "确认分配 ("
+  },
+  "CHƯA GIAO": {
+    "en": "UNASSIGNED",
+    "zh": "未分配"
+  },
+  "TÊN CÔNG VIỆC": {
+    "en": "TASK TITLE",
+    "zh": "任务名称"
+  },
+  "TRẠNG THÁI & QUY TRÌNH DUYỆT": {
+    "en": "STATUS & APPROVAL WORKFLOW",
+    "zh": "状态与审批流程"
+  },
+  "Vai trò:": {
+    "en": "Role:",
+    "zh": "当前角色："
+  },
+  "Xác nhận chuyển trạng thái:": {
+    "en": "Confirm status change:",
+    "zh": "确认更改状态："
+  },
+  "Nhập lý do / yêu cầu chỉnh sửa cho thành viên...": {
+    "en": "Enter reason / revision notes for member...",
+    "zh": "输入退回修改原因或要求…"
+  },
+  "✓ Đã đánh dấu Đạt yêu cầu (Chờ PM duyệt)": {
+    "en": "✓ Marked Verified (Waiting for PM approval)",
+    "zh": "✓ 已标记达标（等待 PM 审批）"
+  },
+  "Đánh dấu Đạt yêu cầu (Trợ lý xác nhận)": {
+    "en": "Mark as Verified (Assistant check)",
+    "zh": "标记为达标（助理确认）"
+  },
+  "PM Duyệt sang Đã xong": {
+    "en": "PM Approve to Done",
+    "zh": "PM 批准为已完成"
+  },
+  "NGƯỜI PHỤ TRÁCH CÔNG VIỆC": {
+    "en": "TASK ASSIGNEE",
+    "zh": "任务负责人"
+  },
+  "+ Tự nhận việc này": {
+    "en": "+ Claim this task",
+    "zh": "+ 认领此任务"
+  },
+  "Bỏ nhận việc": {
+    "en": "Unclaim task",
+    "zh": "取消认领"
+  },
+  "Chưa có người nhận": {
+    "en": "Unassigned",
+    "zh": "暂无人认领"
+  },
+  "Công việc do bạn trực tiếp phụ trách": {
+    "en": "You are directly responsible for this task",
+    "zh": "您直接负责此任务"
+  },
+  "Thành viên thực hiện": {
+    "en": "Assigned member",
+    "zh": "执行成员"
+  },
+  "Bấm '+ Tự nhận việc này' để nhận đầu việc": {
+    "en": "Tap '+ Claim this task' to take ownership",
+    "zh": "点击“+ 认领此任务”以接手此项工作"
+  },
+  "Phân công thủ công (Dành cho PM & Trợ lý):": {
+    "en": "Manual assignment (For PM & Assistant):",
+    "zh": "手动指派（仅限 PM 与助理）："
+  },
+  "Để trống": {
+    "en": "Unassigned",
+    "zh": "留空"
+  },
+  "GIAI ĐOẠN (SPRINT) & MỨC ĐỘ ƯU TIÊN": {
+    "en": "SPRINT & PRIORITY",
+    "zh": "所属冲刺与优先级"
+  },
+  "Hạn chót (YYYY-MM-DD):": {
+    "en": "Due date (YYYY-MM-DD):",
+    "zh": "截止日期 (YYYY-MM-DD)："
+  },
+  "CÁC BƯỚC THỰC HIỆN (": {
+    "en": "IMPLEMENTATION STEPS (",
+    "zh": "执行步骤 ("
+  },
+  "AI Gợi ý bước làm": {
+    "en": "AI Suggest Steps",
+    "zh": "AI 建议步骤"
+  },
+  "Thêm bước thực hiện cụ thể...": {
+    "en": "Add an implementation step...",
+    "zh": "添加具体执行步骤…"
+  },
+  "MÔ TẢ & GHI CHÚ CHI TIẾT": {
+    "en": "DETAILED DESCRIPTION & NOTES",
+    "zh": "详细描述与备注"
+  },
+  "Nhập mô tả chi tiết công việc, tài liệu tham khảo...": {
+    "en": "Enter detailed task description, references...",
+    "zh": "输入详细任务描述或参考资料…"
+  },
+  "Xóa công việc này": {
+    "en": "Delete this task",
+    "zh": "删除此任务"
+  },
+  "Xác nhận xóa công việc này?": {
+    "en": "Confirm deleting this task?",
+    "zh": "确认删除此任务吗？"
+  },
+  "Lưu thông tin": {
+    "en": "Save changes",
+    "zh": "保存信息"
+  },
+  "Công việc đã hoàn thành (Đã xong) và bị khóa trạng thái. Chỉ PM mới có quyền mở lại.": {
+    "en": "Completed tasks are locked. Only the PM can reopen them.",
+    "zh": "已完成任务已被锁定，仅项目经理 (PM) 可重新打开。"
+  },
+  "Thành viên chỉ được chuyển trạng thái công việc của chính mình. Nếu việc chưa giao, hãy bấm \"+ Nhận việc\" trước.": {
+    "en": "Members can only change the status of their own tasks. Claim unassigned tasks first.",
+    "zh": "成员只能更改自己负责的任务状态。如任务未分配，请先点击“+ 认领”。"
+  },
+  "Thành viên không được chuyển trực tiếp sang \"Đã xong\". Vui lòng chuyển sang \"Chờ duyệt\" để PM nghiệm thu.": {
+    "en": "Members cannot move tasks directly to Done. Move to In Review for PM approval.",
+    "zh": "成员不能直接将任务设为“已完成”，请先移至“待审核”由 PM 验收。"
+  },
+  "Trợ lý (Assistant) chỉ được đánh dấu \"Đạt yêu cầu\" ở cột Chờ duyệt, không có quyền duyệt sang \"Đã xong\" (chỉ PM mới được duyệt Đã xong).": {
+    "en": "Assistants can mark tasks as Verified in Review, but only the PM can approve them to Done.",
+    "zh": "协调助理只能在待审核列标记“已达标”，不能直接批准为“已完成”（仅 PM 可批准完成）。"
+  },
+  "Với công việc của thành viên khác, Trợ lý chỉ được đánh dấu \"Đạt yêu cầu\" hoặc trả từ \"Chờ duyệt\" về \"Đang làm\".": {
+    "en": "For other members' tasks, Assistants can only mark Verified or return from In Review to In Progress.",
+    "zh": "对于其他成员的任务，助理只能标记“已达标”或从“待审核”退回“进行中”。"
+  },
+  "Với công việc đang Chờ duyệt của thành viên, PM chỉ duyệt sang \"Đã xong\" hoặc trả về \"Đang làm\".": {
+    "en": "For tasks in review, the PM can approve to Done or return to In Progress.",
+    "zh": "对于待审核任务，PM 只能批准至“已完成”或退回“进行中”。"
+  },
+  "Thành viên phụ trách cần tự thực hiện và gửi sang \"Chờ duyệt\" trước khi PM duyệt sang \"Đã xong\".": {
+    "en": "The assigned member must complete and submit the task to In Review before the PM approves it to Done.",
+    "zh": "负责成员需先执行并提交至“待审核”，之后 PM 才能批准为“已完成”。"
+  },
+  "Sprint": {
+    "en": "Sprint",
+    "zh": "冲刺 (Sprint)"
+  },
+  "Sprint hiện tại": {
+    "en": "Current Sprint",
+    "zh": "当前冲刺"
+  },
+  "Người được chỉ định": {
+    "en": "Assignee",
+    "zh": "负责人"
+  },
+  "Tìm kiếm tên công việc hoặc mã TASK...": {
+    "en": "Search task title or TASK code...",
+    "zh": "搜索任务名称或编号…"
+  },
+  "Lọc theo sprint": {
+    "en": "Filter by sprint",
+    "zh": "按冲刺筛选"
+  },
+  "Bỏ chọn": {
+    "en": "Clear",
+    "zh": "清除选择"
+  },
+  "Tìm kiếm Sprint...": {
+    "en": "Search sprint...",
+    "zh": "搜索冲刺…"
+  },
+  "Tất cả thành viên": {
+    "en": "All members",
+    "zh": "所有成员"
   }
 } as const;

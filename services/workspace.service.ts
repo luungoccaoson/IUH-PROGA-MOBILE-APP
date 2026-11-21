@@ -2,8 +2,11 @@ import { apiClient } from './api';
 import {
   Workspace,
   Space,
+  Sprint,
+  SprintStatus,
   Task,
   TaskStatus,
+  TaskPriority,
   ApiResponse,
   ChatMessage,
   ClassifiedWorkspaces,
@@ -64,17 +67,18 @@ export const workspaceService = {
     return response.data.data;
   },
 
-  getSpacesByWorkspace: async (workspaceId: number): Promise<Space[]> => {
-    const response = await apiClient.get<ApiResponse<Space[]>>(`/spaces/workspace/${workspaceId}`);
+  getSpacesByWorkspace: async (workspaceId: number, userId?: number): Promise<Space[]> => {
+    const url = userId ? `/spaces/workspace/${workspaceId}?userId=${userId}` : `/spaces/workspace/${workspaceId}`;
+    const response = await apiClient.get<ApiResponse<Space[]>>(url);
     return response.data.data;
   },
 
-  createSpace: async (data: { workspaceId: number; name: string; startDate?: string; endDate?: string }): Promise<Space> => {
+  createSpace: async (data: { workspaceId: number; name: string; startDate?: string; endDate?: string; isPrivate?: boolean }): Promise<Space> => {
     const response = await apiClient.post<ApiResponse<Space>>('/spaces', data);
     return response.data.data;
   },
 
-  updateSpace: async (id: number, data: { workspaceId: number; name: string; startDate?: string; endDate?: string }): Promise<Space> => {
+  updateSpace: async (id: number, data: { workspaceId: number; name: string; startDate?: string; endDate?: string; isPrivate?: boolean }): Promise<Space> => {
     const response = await apiClient.put<ApiResponse<Space>>(`/spaces/${id}`, data);
     return response.data.data;
   },
@@ -92,33 +96,123 @@ export const workspaceService = {
     await apiClient.post(`/spaces/${spaceId}/members?userId=${userId}&roleId=${roleId}`);
   },
 
+  updateSpaceMemberRole: async (spaceId: number, userId: number, roleId: number): Promise<void> => {
+    await apiClient.put(`/spaces/${spaceId}/members/${userId}/role?roleId=${roleId}`);
+  },
+
   removeMemberFromSpace: async (spaceId: number, userId: number): Promise<void> => {
     await apiClient.delete(`/spaces/${spaceId}/members/${userId}`);
+  },
+
+  // Sprints
+  getSprintsBySpace: async (spaceId: number, status?: SprintStatus): Promise<Sprint[]> => {
+    const url = status
+      ? `/sprints/space/${spaceId}?status=${status}`
+      : `/sprints/space/${spaceId}`;
+    const response = await apiClient.get<ApiResponse<Sprint[]>>(url);
+    return response.data.data || [];
+  },
+
+  createSprint: async (data: {
+    spaceId: number;
+    name: string;
+    goal?: string;
+    status?: SprintStatus;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<Sprint> => {
+    const response = await apiClient.post<ApiResponse<Sprint>>('/sprints', data);
+    return response.data.data;
+  },
+
+  updateSprint: async (
+    id: number,
+    data: {
+      spaceId: number;
+      name: string;
+      goal?: string;
+      status?: SprintStatus;
+      startDate?: string;
+      endDate?: string;
+    }
+  ): Promise<Sprint> => {
+    const response = await apiClient.put<ApiResponse<Sprint>>(`/sprints/${id}`, data);
+    return response.data.data;
+  },
+
+  updateSprintStatus: async (id: number, status: SprintStatus): Promise<Sprint> => {
+    const response = await apiClient.patch<ApiResponse<Sprint>>(`/sprints/${id}/status?status=${status}`);
+    return response.data.data;
+  },
+
+  deleteSprint: async (id: number, deleteTasks = false): Promise<void> => {
+    await apiClient.delete<ApiResponse<void>>(`/sprints/${id}`, {
+      params: { deleteTasks },
+    });
   },
 
   // Tasks & Kanban
   getTasksBySpace: async (spaceId: number): Promise<Task[]> => {
     const response = await apiClient.get<ApiResponse<Task[]>>(`/tasks/space/${spaceId}`);
-    return response.data.data;
+    return (response.data.data || []).filter((t) => !t.isDeleted);
+  },
+
+  getTasksBySprint: async (sprintId: number): Promise<Task[]> => {
+    const response = await apiClient.get<ApiResponse<Task[]>>(`/tasks/sprint/${sprintId}`);
+    return (response.data.data || []).filter((t) => !t.isDeleted);
   },
 
   updateTaskStatus: async (taskId: number, status: TaskStatus): Promise<Task> => {
-    const response = await apiClient.patch<ApiResponse<Task>>(`/tasks/${taskId}/status?status=${status}`);
+    const apiStatus = status === 'REVIEW' ? 'IN_REVIEW' : status;
+    const response = await apiClient.patch<ApiResponse<Task>>(`/tasks/${taskId}/status?status=${apiStatus}`);
+    return response.data.data;
+  },
+
+  updateTask: async (
+    id: number,
+    data: {
+      spaceId: number;
+      sprintId?: number | null;
+      title: string;
+      description?: string;
+      status?: TaskStatus;
+      priority?: TaskPriority;
+      ownerId?: number | null;
+      startDate?: string;
+      dueDate?: string;
+    }
+  ): Promise<Task> => {
+    const payload = {
+      ...data,
+      status: data.status === 'REVIEW' ? 'IN_REVIEW' : data.status,
+    };
+    const response = await apiClient.put<ApiResponse<Task>>(`/tasks/${id}`, payload);
     return response.data.data;
   },
 
   createTask: async (data: {
     spaceId: number;
+    sprintId?: number | null;
     title: string;
     description?: string;
     status?: TaskStatus;
     priority?: string;
-    ownerId?: number;
+    ownerId?: number | null;
     startDate?: string;
     dueDate?: string;
   }): Promise<Task> => {
-    const response = await apiClient.post<ApiResponse<Task>>('/tasks', data);
+    const payload = {
+      ...data,
+      status: data.status === 'REVIEW' ? 'IN_REVIEW' : data.status,
+    };
+    const response = await apiClient.post<ApiResponse<Task>>('/tasks', payload);
     return response.data.data;
+  },
+
+  assignTasksBatch: async (
+    assignments: { taskId: number; ownerId: number; startDate?: string; dueDate?: string }[]
+  ): Promise<void> => {
+    await apiClient.post<ApiResponse<void>>('/tasks/batch-assign', { assignments });
   },
 
   deleteTask: async (taskId: number): Promise<void> => {
@@ -151,23 +245,31 @@ export const workspaceService = {
     }
   },
 
-  // Get all tasks across user's spaces
-  getAllUserTasks: async (userId: number): Promise<{ task: Task; spaceName: string; workspaceName: string }[]> => {
+  // Get all tasks across user's spaces (with sprint names mapped!)
+  getAllUserTasks: async (userId: number): Promise<{ task: Task; spaceName: string; workspaceName: string; sprintName?: string }[]> => {
     try {
       const userSpaces = await workspaceService.getAllUserSpaces(userId);
-      const allTasks: { task: Task; spaceName: string; workspaceName: string }[] = [];
+      const allTasks: { task: Task; spaceName: string; workspaceName: string; sprintName?: string }[] = [];
 
       await Promise.all(
         userSpaces.map(async (group) => {
           await Promise.all(
             group.spaces.map(async (sp) => {
               try {
-                const tasks = await workspaceService.getTasksBySpace(sp.id);
+                const [tasks, sprints] = await Promise.all([
+                  workspaceService.getTasksBySpace(sp.id),
+                  workspaceService.getSprintsBySpace(sp.id).catch(() => []),
+                ]);
+                const sprintMap = new Map<number, string>();
+                sprints.forEach((s) => sprintMap.set(s.id, s.name));
+
                 for (const t of tasks) {
+                  const spName = t.sprintId ? sprintMap.get(t.sprintId) : undefined;
                   allTasks.push({
-                    task: t,
+                    task: { ...t, sprintName: spName || t.sprintName },
                     spaceName: sp.name,
                     workspaceName: group.workspace.name,
+                    sprintName: spName,
                   });
                 }
               } catch {
@@ -193,7 +295,6 @@ export const workspaceService = {
       const response = await apiClient.post<ApiResponse<ChatMessage>>('/ai/chat', data);
       return response.data.data;
     } catch (err) {
-      // Fallback mock AI response for demonstration if AI microservice is not online
       return {
         id: Date.now(),
         threadId: 1,
@@ -204,7 +305,7 @@ export const workspaceService = {
         jsonPayload: data.agentType === 'REQUIREMENT' ? JSON.stringify([
           { title: 'Xây dựng màn hình đăng nhập & xác thực', description: 'Giao diện login, validate input', priority: 'HIGH' },
           { title: 'Cấu hình kết nối API Gateway', description: 'Tích hợp JWT Token Interceptor', priority: 'URGENT' },
-          { title: 'Thiết kế Bảng Kanban 4 cột', description: 'Cột TODO, IN_PROGRESS, REVIEW, DONE', priority: 'MEDIUM' }
+          { title: 'Thiết kế Bảng Kanban 4 cột', description: 'Cột TODO, IN_PROGRESS, IN_REVIEW, DONE', priority: 'MEDIUM' }
         ]) : undefined,
         createdAt: new Date().toISOString(),
       };

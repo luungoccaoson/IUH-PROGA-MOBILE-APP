@@ -36,6 +36,7 @@ import { Workspace, Space } from '../../types';
 import { SpaceModal } from '../../components/SpaceModal';
 import { WorkspaceModal } from '../../components/WorkspaceModal';
 import { AddWorkspaceMemberModal } from '../../components/AddWorkspaceMemberModal';
+import { PersistentTabBar } from '../../components/PersistentTabBar';
 import { getProgressColor } from '../../utils/progress';
 
 export interface SpaceBreakdownItem {
@@ -92,7 +93,6 @@ export default function WorkspaceDetailScreen() {
       }
       setExistingMemberIds(memberIds);
 
-      // Fetch all tasks across spaces in this workspace to calculate true overall progress
       try {
         const spaceTasksList = await Promise.all(
           spacesList.map((sp) => workspaceService.getTasksBySpace(sp.id).catch(() => []))
@@ -161,7 +161,7 @@ export default function WorkspaceDetailScreen() {
       });
       setWorkspace(updated);
       Alert.alert(tr("Thành công"), tr("Thông tin Workspace đã được cập nhật."));
-    } catch (e: any) {
+    } catch {
       Alert.alert(tr("Lỗi"), tr("Không thể cập nhật thông tin Workspace."));
     }
   };
@@ -180,8 +180,8 @@ export default function WorkspaceDetailScreen() {
             try {
               await workspaceService.deleteWorkspace(workspace.id);
               Alert.alert(tr("Thành công"), tr("Đã xóa Workspace thành công."));
-              router.back();
-            } catch (e: any) {
+              router.replace('/(tabs)');
+            } catch {
               Alert.alert(tr("Lỗi"), tr("Không thể xóa Workspace này."));
             }
           },
@@ -193,11 +193,12 @@ export default function WorkspaceDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="light-content" backgroundColor="#101214" />
+        <StatusBar barStyle="light-content" />
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#579DFF" />
           <Text style={styles.loadingText}>{tr("Đang tải chi tiết Workspace...")}</Text>
         </View>
+        <PersistentTabBar activeTab="index" />
       </SafeAreaView>
     );
   }
@@ -205,13 +206,14 @@ export default function WorkspaceDetailScreen() {
   if (error || !workspace) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="light-content" backgroundColor="#101214" />
+        <StatusBar barStyle="light-content" />
         <View style={styles.centerContainer}>
           <Text style={styles.errorText}>{tr(error || "Không tìm thấy Workspace.")}</Text>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/(tabs)')}>
             <Text style={styles.backBtnText}>{tr("Quay lại")}</Text>
           </TouchableOpacity>
         </View>
+        <PersistentTabBar activeTab="index" />
       </SafeAreaView>
     );
   }
@@ -220,13 +222,19 @@ export default function WorkspaceDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.headerBg} />
+      <StatusBar barStyle={colors.statusBar} />
       <View style={styles.container}>
         {/* Custom Header Bar */}
         <View style={styles.headerBar}>
           <TouchableOpacity
             style={styles.headerIconBtn}
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(tabs)');
+              }
+            }}
             activeOpacity={0.7}
           >
             <ArrowLeft size={22} color={colors.text} />
@@ -417,8 +425,11 @@ export default function WorkspaceDetailScreen() {
             )}
           </View>
 
-          <View style={{ height: 40 }} />
+          <View style={{ height: 24 }} />
         </ScrollView>
+
+        {/* PERSISTENT BOTTOM TAB BAR */}
+        <PersistentTabBar activeTab="index" />
 
         {/* Create Space Modal */}
         <SpaceModal
@@ -463,7 +474,6 @@ export default function WorkspaceDetailScreen() {
                 <Text style={styles.actionSheetSub}>{workspace.name}</Text>
               </View>
 
-              {/* Action 1: Thêm thành viên */}
               <TouchableOpacity
                 style={styles.actionItem}
                 activeOpacity={0.7}
@@ -482,7 +492,6 @@ export default function WorkspaceDetailScreen() {
                 </View>
               </TouchableOpacity>
 
-              {/* Action 2: Chỉnh sửa thông tin workspace */}
               <TouchableOpacity
                 style={styles.actionItem}
                 activeOpacity={0.7}
@@ -503,7 +512,6 @@ export default function WorkspaceDetailScreen() {
 
               <View style={styles.actionDivider} />
 
-              {/* Action 3: Xóa workspace */}
               <TouchableOpacity
                 style={styles.actionItem}
                 activeOpacity={0.7}
@@ -556,14 +564,12 @@ export default function WorkspaceDetailScreen() {
                 <TouchableOpacity
                   style={styles.closeBtn}
                   onPress={() => setExplainModalVisible(false)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <X size={20} color="#8C9BAB" />
                 </TouchableOpacity>
               </View>
 
               <ScrollView style={styles.explainBody} showsVerticalScrollIndicator={false}>
-                {/* Summary Box */}
                 <View style={styles.summaryBox}>
                   <Text style={[styles.summaryNumber, { color: overallProgressColor.main }]}>
                     {taskStats.percent}%
@@ -572,7 +578,6 @@ export default function WorkspaceDetailScreen() {
                     {tr('Đạt được {done} trên tổng số {total} công việc đã hoàn thành', { done: taskStats.done, total: taskStats.total })}</Text>
                 </View>
 
-                {/* Formula Box */}
                 <View style={styles.formulaBox}>
                   <Text style={styles.formulaHeader}>{tr("CÔNG THỨC ÁP DỤNG")}</Text>
                   <Text style={styles.formulaEquation}>
@@ -581,7 +586,6 @@ export default function WorkspaceDetailScreen() {
                     {tr("💡 Tiến độ tính theo trọng số công việc thực tế, không lấy trung bình cộng % của các Space. Space nào có nhiều việc hơn sẽ chiếm tỷ trọng lớn hơn trong toàn bộ Workspace.")}</Text>
                 </View>
 
-                {/* Breakdown per Space */}
                 <Text style={styles.breakdownHeader}>
                   {tr("ĐÓNG GÓP CỦA TỪNG KHÔNG GIAN (")}{spaceBreakdown.length})
                 </Text>
@@ -617,52 +621,6 @@ export default function WorkspaceDetailScreen() {
                       </View>
                     );
                   })}
-                </View>
-
-                {/* Color Legend Box */}
-                <View style={styles.colorLegendBox}>
-                  <Text style={styles.legendHeader}>{tr("QUY ĐỊNH MÀU SẮC TIẾN ĐỘ")}</Text>
-                  <View style={styles.legendGrid}>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
-                      <Text style={styles.legendText}>
-                        <Text style={{ color: '#EF4444', fontWeight: '700' }}>{tr("0% - &lt;30%")}</Text>{tr(": Màu đỏ (Cần đẩy nhanh)")}</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendDot, { backgroundColor: '#F59E0B' }]} />
-                      <Text style={styles.legendText}>
-                        <Text style={{ color: '#F59E0B', fontWeight: '700' }}>{tr("30% - &lt;70%")}</Text>{tr(": Màu vàng (Đang tiến triển)")}</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendDot, { backgroundColor: '#579DFF' }]} />
-                      <Text style={styles.legendText}>
-                        <Text style={{ color: '#579DFF', fontWeight: '700' }}>{tr("70% - &lt;100%")}</Text>{tr(": Màu xanh dương (Khá tốt)")}</Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View style={[styles.legendDot, { backgroundColor: '#57D9A3' }]} />
-                      <Text style={styles.legendText}>
-                        <Text style={{ color: '#57D9A3', fontWeight: '700' }}>100%</Text>{tr(": Màu xanh lá cây (Hoàn thành)")}</Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Compare Note */}
-                <View style={styles.compareNoteBox}>
-                  <Text style={styles.compareNoteText}>
-                    {tr("• Nếu lấy trung bình cộng: (")}{spaceBreakdown.map((s) => `${s.percent}%`).join(' + ')}{tr(") ÷")}{spaceBreakdown.length || 1} ={' '}
-                    <Text style={{ fontWeight: '700', color: '#E6EDF3' }}>
-                      {spaceBreakdown.length > 0
-                        ? `${Math.round(
-                            spaceBreakdown.reduce((acc, s) => acc + s.percent, 0) /
-                              spaceBreakdown.length
-                          )}%`
-                        : '0%'}
-                    </Text>
-                    {'\n'}{tr("• Nhưng thực tế cả Workspace đã hoàn thành")}{' '}
-                    <Text style={{ fontWeight: '700', color: overallProgressColor.main }}>
-                      {taskStats.done}/{taskStats.total} {tr("task (")}{taskStats.percent}%)
-                    </Text>
-                    {tr(", nên hệ thống phản ánh đúng")}{taskStats.percent}{tr("% khối lượng công việc.")}</Text>
                 </View>
               </ScrollView>
 
@@ -1176,19 +1134,6 @@ const getStyles = (colors: ThemeColors, isDark: boolean) =>
       fontSize: 12,
       fontWeight: '700',
     },
-    compareNoteBox: {
-      backgroundColor: 'rgba(87, 157, 255, 0.08)',
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: 'rgba(87, 157, 255, 0.2)',
-      padding: 12,
-      marginBottom: 16,
-    },
-    compareNoteText: {
-      color: colors.subText,
-      fontSize: 12,
-      lineHeight: 18,
-    },
     understandBtn: {
       backgroundColor: colors.primary,
       borderRadius: 12,
@@ -1210,37 +1155,5 @@ const getStyles = (colors: ThemeColors, isDark: boolean) =>
     spacePercentText: {
       fontSize: 11,
       fontWeight: '800',
-    },
-    colorLegendBox: {
-      backgroundColor: colors.cardInner,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      padding: 12,
-      marginBottom: 14,
-    },
-    legendHeader: {
-      color: colors.subText,
-      fontSize: 10,
-      fontWeight: '800',
-      letterSpacing: 0.5,
-      marginBottom: 8,
-    },
-    legendGrid: {
-      gap: 6,
-    },
-    legendItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    legendDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-    },
-    legendText: {
-      color: colors.subText,
-      fontSize: 11,
     },
   });

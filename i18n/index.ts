@@ -17,9 +17,10 @@ export function translate(key: string, values: Record<string, string | number> =
 export function systemLabel(value: string): string {
   const keys: Record<string, string> = {
     TODO: 'Cần làm', IN_PROGRESS: 'Đang làm', 'IN PROGRESS': 'Đang làm',
-    REVIEW: 'Đang duyệt (Review)', DONE: 'Hoàn thành',
+    REVIEW: 'Đang duyệt (Review)', IN_REVIEW: 'Chờ duyệt', DONE: 'Hoàn thành',
     LOW: 'Thấp', MEDIUM: 'Trung bình', HIGH: 'Cao', URGENT: 'Khẩn cấp',
-    OWNER: 'Chủ sở hữu', ADMIN: 'Quản trị viên', PM: 'Quản lý dự án', MEMBER: 'Thành viên',
+    OWNER: 'Chủ sở hữu', ADMIN: 'Quản trị viên', PM: 'Quản lý dự án', ASSISTANT: 'Trợ lý điều phối', MEMBER: 'Thành viên',
+    FUTURE: 'Sắp tới', ACTIVE: 'Đang diễn ra', CLOSED: 'Đã đóng',
     REQUIREMENT: 'Requirement Agent', TECHNICAL_ADVISOR: 'Tech Advisor Agent',
   };
   return translate(keys[value] ?? value);
