@@ -134,6 +134,8 @@ export default function SpaceDetailScreen() {
   // Kanban selected Sprint (Defaults to Active Sprint, no "All Sprints"!)
   const [kanbanSprintId, setKanbanSprintId] = useState<number | 'BACKLOG' | undefined>(undefined);
   const [collapsedSprints, setCollapsedSprints] = useState<Record<string, boolean>>({});
+  const initializedCollapseRef = useRef<boolean>(false);
+  const [isKanbanDragging, setIsKanbanDragging] = useState<boolean>(false);
 
   // Modals state
   const [createTaskVisible, setCreateTaskVisible] = useState(false);
@@ -339,12 +341,31 @@ export default function SpaceDetailScreen() {
         setMemberUsers(validProfiles);
         setTasks(enrichedTasks);
 
+        // Sort sprints naturally: Sprint 1 -> Sprint 2 -> ...
+        const extractNum = (name: string, fallbackId: number) => {
+          const m = name.match(/(\d+)/);
+          return m ? parseInt(m[1], 10) : fallbackId;
+        };
+        const orderedSpList = [...(sprintList || [])].sort(
+          (a, b) =>
+            extractNum(a.name, a.id) - extractNum(b.name, b.id) || a.id - b.id
+        );
+        const activeSp =
+          orderedSpList.find((s) => s.status === 'ACTIVE') || orderedSpList[0];
+
+        // On initial open, collapse all Sprints & Backlog EXCEPT the current active Sprint!
+        if (!initializedCollapseRef.current && orderedSpList.length > 0) {
+          initializedCollapseRef.current = true;
+          const initMap: Record<string, boolean> = { backlog: true };
+          orderedSpList.forEach((sp) => {
+            initMap[`sprint-${sp.id}`] = activeSp ? sp.id !== activeSp.id : false;
+          });
+          setCollapsedSprints(initMap);
+        }
+
         // Set default Kanban Sprint to Active Sprint (or first Sprint, or BACKLOG)
         setKanbanSprintId((prev) => {
           if (prev !== undefined) return prev;
-          const activeSp =
-            (sprintList || []).find((s) => s.status === 'ACTIVE') ||
-            (sprintList || [])[0];
           return activeSp ? activeSp.id : 'BACKLOG';
         });
 
@@ -773,7 +794,19 @@ export default function SpaceDetailScreen() {
     });
   }, [tasks, taskOwnerFilter, user?.id, tasksSearchQuery]);
 
-  // Group filteredTasks by Sprints + Backlog (filtered by tasksSprintFilter)
+  // Sort sprints naturally in sequential order: Sprint 1 -> Sprint 2 -> ...
+  const orderedSprints = useMemo(() => {
+    const extractOrder = (name: string, fallbackId: number) => {
+      const m = name.match(/(\d+)/);
+      return m ? parseInt(m[1], 10) : fallbackId;
+    };
+    return [...sprints].sort(
+      (a, b) =>
+        extractOrder(a.name, a.id) - extractOrder(b.name, b.id) || a.id - b.id
+    );
+  }, [sprints]);
+
+  // Group filteredTasks by Sprints (in natural sequential order) + Backlog (filtered by tasksSprintFilter)
   const sprintSections = useMemo(() => {
     const sections: {
       key: string;
@@ -787,9 +820,9 @@ export default function SpaceDetailScreen() {
       doneInSprint: number;
     }[] = [];
 
-    const sprintIdSet = new Set(sprints.map((s) => s.id));
+    const sprintIdSet = new Set(orderedSprints.map((s) => s.id));
 
-    sprints.forEach((sp) => {
+    orderedSprints.forEach((sp) => {
       if (
         tasksSprintFilter !== 'ALL' &&
         tasksSprintFilter !== sp.id
@@ -842,14 +875,14 @@ export default function SpaceDetailScreen() {
     }
 
     return sections;
-  }, [sprints, tasks, filteredTasks, tasksSprintFilter]);
+  }, [orderedSprints, tasks, filteredTasks, tasksSprintFilter]);
 
   const tasksSprintPillLabel = useMemo(() => {
     if (tasksSprintFilter === 'ALL') return tr("Sprint");
     if (tasksSprintFilter === 'BACKLOG') return tr("Backlog");
-    const found = sprints.find((s) => s.id === tasksSprintFilter);
+    const found = orderedSprints.find((s) => s.id === tasksSprintFilter);
     return found ? found.name : tr("Sprint");
-  }, [tasksSprintFilter, sprints]);
+  }, [tasksSprintFilter, orderedSprints]);
 
   const tasksAssigneePillLabel = useMemo(() => {
     if (taskOwnerFilter === 'ALL') return tr("Người được chỉ định");
@@ -863,9 +896,9 @@ export default function SpaceDetailScreen() {
 
   const searchedSprintsForSheet = useMemo(() => {
     const q = tasksSprintSearchQuery.trim().toLowerCase();
-    if (!q) return sprints;
-    return sprints.filter((s) => s.name.toLowerCase().includes(q));
-  }, [sprints, tasksSprintSearchQuery]);
+    if (!q) return orderedSprints;
+    return orderedSprints.filter((s) => s.name.toLowerCase().includes(q));
+  }, [orderedSprints, tasksSprintSearchQuery]);
 
   const toggleSprintCollapse = (key: string) => {
     setCollapsedSprints((prev) => ({
@@ -1091,6 +1124,7 @@ export default function SpaceDetailScreen() {
         <ScrollView
           style={styles.content}
           showsVerticalScrollIndicator={false}
+          scrollEnabled={!isKanbanDragging}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -1650,13 +1684,6 @@ export default function SpaceDetailScreen() {
                                 activeOpacity={0.8}
                                 onPress={() => setSelectedTask(t)}
                               >
-                                <View style={styles.cleanTaskLeftIcon}>
-                                  <SquareCheck
-                                    size={18}
-                                    color={isDone ? '#16A34A' : '#3B82F6'}
-                                  />
-                                </View>
-
                                 <View style={styles.cleanTaskCenter}>
                                   <Text
                                     style={[
@@ -1664,7 +1691,6 @@ export default function SpaceDetailScreen() {
                                       isMyTask && {
                                         fontWeight: '800',
                                       },
-                                      isDone && styles.strikeThrough,
                                     ]}
                                     numberOfLines={2}
                                   >
@@ -1909,6 +1935,7 @@ export default function SpaceDetailScreen() {
                 onSelectTask={(t) => setSelectedTask(t)}
                 onSelfAssign={(t) => setSelfAssignTask(t)}
                 onAssistantVerify={handleAssistantVerifyTask}
+                onDragStateChange={setIsKanbanDragging}
                 onAddTask={() => {
                   setCreateTaskDefaultSprintId(
                     typeof kanbanSprintId === 'number'

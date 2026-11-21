@@ -130,7 +130,7 @@ export const SpaceMindmapView: React.FC<SpaceMindmapViewProps> = ({
     return isOverdue || isUrgent || Boolean(t.riskWarning);
   });
 
-  // Group tasks by Sprint + Backlog for WBS Mindmap tree (Active Sprint listed first!)
+  // Group tasks by Sprint + Backlog for WBS Mindmap tree (Natural order: Sprint 1 -> Sprint 2 -> ... -> Backlog)
   const sprintGroups = useMemo(() => {
     const groups: {
       key: string;
@@ -141,8 +141,12 @@ export const SpaceMindmapView: React.FC<SpaceMindmapViewProps> = ({
 
     const sprintIdSet = new Set(sprints.map((s) => s.id));
     const sortedSprints = [...sprints].sort((a, b) => {
-      if (a.status === 'ACTIVE' && b.status !== 'ACTIVE') return -1;
-      if (b.status === 'ACTIVE' && a.status !== 'ACTIVE') return 1;
+      const numA = a.name.match(/\d+/);
+      const numB = b.name.match(/\d+/);
+      if (numA && numB) {
+        const diff = parseInt(numA[0], 10) - parseInt(numB[0], 10);
+        if (diff !== 0) return diff;
+      }
       return a.id - b.id;
     });
 

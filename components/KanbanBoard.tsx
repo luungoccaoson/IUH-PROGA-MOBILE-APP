@@ -9,10 +9,11 @@ import {
   Dimensions,
   NativeSyntheticEvent,
   NativeScrollEvent,
-  PanResponder,
   Animated,
   Modal,
   TextInput,
+  Alert,
+  Vibration,
 } from 'react-native';
 import {
   ListTodo,
@@ -23,11 +24,11 @@ import {
   UserPlus,
   ShieldCheck,
   RotateCcw,
-  SquareCheck,
   AlertCircle,
   Search,
   ChevronDown,
   X,
+  Ban,
 } from 'lucide-react-native';
 import { Task, TaskStatus, User, SpaceRoleType, Sprint } from '../types';
 import { useThemeStore, ThemeColors } from '../stores/useThemeStore';
@@ -56,10 +57,12 @@ interface KanbanBoardProps {
   onSelfAssign?: (task: Task) => void;
   onAssistantVerify?: (task: Task, verified: boolean) => void;
   onAddTask?: (defaultStatus?: TaskStatus) => void;
+  onDragStateChange?: (isDragging: boolean) => void;
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const COLUMN_WIDTH = Math.min(315, Math.max(265, Math.round(SCREEN_WIDTH * 0.77)));
+const COLUMN_GAP = 12;
 
 const COLUMNS: {
   key: CanonicalTaskStatus;
@@ -126,16 +129,30 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onSelfAssign,
   onAssistantVerify,
   onAddTask,
+  onDragStateChange,
 }) => {
   const { colors, isDark } = useThemeStore();
   useSystemTranslation();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
+  // Sort Sprints naturally: Sprint 1 -> Sprint 2 -> ...
+  const orderedSprints = useMemo(() => {
+    const extractOrder = (name: string, fallbackId: number) => {
+      const m = name.match(/(\d+)/);
+      return m ? parseInt(m[1], 10) : fallbackId;
+    };
+    return [...sprints].sort(
+      (a, b) =>
+        extractOrder(a.name, a.id) - extractOrder(b.name, b.id) || a.id - b.id
+    );
+  }, [sprints]);
+
   // Default to active Sprint (or first Sprint, or BACKLOG) - never "All Sprints" when sprints exist
   const defaultSprintValue: number | 'BACKLOG' = useMemo(() => {
-    const active = sprints.find((s) => s.status === 'ACTIVE') || sprints[0];
+    const active =
+      orderedSprints.find((s) => s.status === 'ACTIVE') || orderedSprints[0];
     return active ? active.id : 'BACKLOG';
-  }, [sprints]);
+  }, [orderedSprints]);
 
   const [internalSprintId, setInternalSprintId] = useState<number | 'BACKLOG'>(
     selectedSprintId ?? defaultSprintValue
@@ -170,14 +187,36 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [activeColIndex, setActiveColIndex] = useState(0);
   const [permissionNotice, setPermissionNotice] = useState<string | null>(null);
 
-  // Drag & Drop state (Long-press to drag card across the 4 columns)
+  // iOS & Android Native Responder Drag & Drop state
   const [draggingTask, setDraggingTask] = useState<Task | null>(null);
   const [hoveredStatus, setHoveredStatus] = useState<CanonicalTaskStatus | null>(null);
+  const boardContainerRef = useRef<View | null>(null);
+  const boardTopYRef = useRef<number>(170);
   const draggingTaskRef = useRef<Task | null>(null);
+  const hoveredStatusRef = useRef<CanonicalTaskStatus | null>(null);
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const autoScrollDirRef = useRef<-1 | 0 | 1>(0);
+  const touchStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const latestTouchPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const didMoveMuchRef = useRef<boolean>(false);
+  const horizontalScrollRef = useRef<ScrollView | null>(null);
+  const scrollOffsetXRef = useRef<number>(0);
   const pan = useRef(new Animated.ValueXY()).current;
 
   const isPM = userRole === 'PM';
   const isAssistant = userRole === 'ASSISTANT';
+
+  useEffect(() => {
+    return () => {
+      if (holdTimerRef.current) {
+        clearTimeout(holdTimerRef.current);
+      }
+      if (autoScrollIntervalRef.current) {
+        clearInterval(autoScrollIntervalRef.current);
+      }
+    };
+  }, []);
 
   const getPriorityColor = (p?: string) => {
     switch (p) {
@@ -227,11 +266,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       currentUserId
     );
     if (!perm.allowed) {
-      setPermissionNotice(
-        perm.reasonKey
-          ? tr(perm.reasonKey)
-          : tr("Thao tác không được phép.")
-      );
+      const msg = perm.reasonKey
+        ? tr(perm.reasonKey)
+        : tr("Thao tác không được phép.");
+      setPermissionNotice(msg);
+      Alert.alert(tr("Phân quyền thao tác"), msg);
       return;
     }
 
@@ -242,67 +281,180 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
-  const triggerStatusTransitionRef = useRef(triggerStatusTransition);
-  triggerStatusTransitionRef.current = triggerStatusTransition;
-
-  // Map X coordinate to 1 of the 4 Kanban status columns during drag
-  const getStatusFromX = (x: number): CanonicalTaskStatus => {
-    const quarter = SCREEN_WIDTH / 4;
-    if (x < quarter) return 'TODO';
-    if (x < quarter * 2) return 'IN_PROGRESS';
-    if (x < quarter * 3) return 'IN_REVIEW';
-    return 'DONE';
+  // Compute hovered column based on finger pageX + horizontal scroll offset
+  const getHoveredColumnFromTouch = (pageX: number): CanonicalTaskStatus => {
+    const contentX = Math.max(0, scrollOffsetXRef.current + pageX - 12);
+    const colIdx = Math.min(
+      COLUMNS.length - 1,
+      Math.max(0, Math.floor(contentX / (COLUMN_WIDTH + COLUMN_GAP)))
+    );
+    return COLUMNS[colIdx].key;
   };
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderMove: (_, gestureState) => {
-        pan.setValue({
-          x: gestureState.moveX - 115,
-          y: gestureState.moveY - 50,
-        });
-        const target = getStatusFromX(gestureState.moveX);
-        setHoveredStatus(target);
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        const target = getStatusFromX(gestureState.moveX);
-        const currentTask = draggingTaskRef.current;
-        draggingTaskRef.current = null;
-        setDraggingTask(null);
-        setHoveredStatus(null);
+  const stopAutoScroll = () => {
+    autoScrollDirRef.current = 0;
+    if (autoScrollIntervalRef.current) {
+      clearInterval(autoScrollIntervalRef.current);
+      autoScrollIntervalRef.current = null;
+    }
+  };
 
-        if (
-          currentTask &&
-          target &&
-          normalizeTaskStatus(currentTask.status) !== target
-        ) {
-          const isRev =
-            normalizeTaskStatus(currentTask.status) === 'IN_REVIEW' &&
-            target === 'IN_PROGRESS';
-          triggerStatusTransitionRef.current(currentTask, target, isRev);
+  const updateAutoScrollForPageX = (pageX: number) => {
+    let dir: -1 | 0 | 1 = 0;
+    if (pageX > SCREEN_WIDTH - 78) {
+      dir = 1;
+    } else if (pageX < 78) {
+      dir = -1;
+    }
+
+    if (dir === autoScrollDirRef.current) return;
+    autoScrollDirRef.current = dir;
+
+    if (autoScrollIntervalRef.current) {
+      clearInterval(autoScrollIntervalRef.current);
+      autoScrollIntervalRef.current = null;
+    }
+
+    if (dir !== 0) {
+      const maxScrollX = Math.max(
+        0,
+        COLUMNS.length * (COLUMN_WIDTH + COLUMN_GAP) - SCREEN_WIDTH + 24
+      );
+      autoScrollIntervalRef.current = setInterval(() => {
+        if (!draggingTaskRef.current || autoScrollDirRef.current === 0) return;
+        const step = autoScrollDirRef.current * 24;
+        const nextX = Math.max(
+          0,
+          Math.min(maxScrollX, scrollOffsetXRef.current + step)
+        );
+        if (nextX !== scrollOffsetXRef.current) {
+          scrollOffsetXRef.current = nextX;
+          horizontalScrollRef.current?.scrollTo({ x: nextX, animated: false });
+          const nextHover = getHoveredColumnFromTouch(
+            latestTouchPosRef.current.x
+          );
+          if (nextHover !== hoveredStatusRef.current) {
+            hoveredStatusRef.current = nextHover;
+            setHoveredStatus(nextHover);
+          }
         }
-      },
-      onPanResponderTerminate: () => {
-        draggingTaskRef.current = null;
-        setDraggingTask(null);
-        setHoveredStatus(null);
-      },
-    })
-  ).current;
+      }, 28);
+    }
+  };
 
-  const handleStartDrag = (task: Task, startX: number, startY: number) => {
-    const st = normalizeTaskStatus(task.status);
-    draggingTaskRef.current = task;
-    setDraggingTask(task);
-    setHoveredStatus(st);
-    pan.setValue({ x: startX - 115, y: startY - 50 });
+  const updateFloatingPanPosition = (pageX: number, pageY: number) => {
+    const relX = Math.max(6, Math.min(SCREEN_WIDTH - 245, pageX - 115));
+    const relY = Math.max(8, pageY - boardTopYRef.current - 45);
+    pan.setValue({ x: relX, y: relY });
+  };
+
+  const startCardTouchSession = (task: Task, pageX: number, pageY: number) => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    stopAutoScroll();
+    didMoveMuchRef.current = false;
+    touchStartPosRef.current = { x: pageX, y: pageY };
+    latestTouchPosRef.current = { x: pageX, y: pageY };
+
+    // Measure board container top Y on screen for accurate floating card coordinates
+    if (boardContainerRef.current) {
+      boardContainerRef.current.measureInWindow((_x, y) => {
+        if (typeof y === 'number' && y > 0) {
+          boardTopYRef.current = y;
+        }
+      });
+    }
+
+    // Hold for 210ms without scrolling -> Activate Jira Drag & Drop!
+    holdTimerRef.current = setTimeout(() => {
+      const st = normalizeTaskStatus(task.status);
+      draggingTaskRef.current = task;
+      hoveredStatusRef.current = st;
+      setDraggingTask(task);
+      setHoveredStatus(st);
+      setPermissionNotice(null);
+      updateFloatingPanPosition(
+        latestTouchPosRef.current.x,
+        latestTouchPosRef.current.y
+      );
+      onDragStateChange?.(true);
+      try {
+        Vibration.vibrate(15);
+      } catch {
+        // Ignore if vibration unavailable
+      }
+    }, 210);
+  };
+
+  const moveCardTouchSession = (pageX: number, pageY: number) => {
+    latestTouchPosRef.current = { x: pageX, y: pageY };
+
+    if (!draggingTaskRef.current) {
+      const dx = Math.abs(pageX - touchStartPosRef.current.x);
+      const dy = Math.abs(pageY - touchStartPosRef.current.y);
+      if (dx > 10 || dy > 10) {
+        didMoveMuchRef.current = true;
+        if (holdTimerRef.current) {
+          clearTimeout(holdTimerRef.current);
+          holdTimerRef.current = null;
+        }
+      }
+      return;
+    }
+
+    // Update floating preview card position
+    updateFloatingPanPosition(pageX, pageY);
+
+    // Trigger continuous auto-scroll when dragging near left/right screen edge
+    updateAutoScrollForPageX(pageX);
+
+    // Update hovered target column
+    const nextHover = getHoveredColumnFromTouch(pageX);
+    if (nextHover !== hoveredStatusRef.current) {
+      hoveredStatusRef.current = nextHover;
+      setHoveredStatus(nextHover);
+    }
+  };
+
+  const endCardTouchSession = (task: Task, cancelled = false) => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    stopAutoScroll();
+
+    const activeDragged = draggingTaskRef.current;
+    const target = hoveredStatusRef.current;
+
+    if (activeDragged) {
+      draggingTaskRef.current = null;
+      hoveredStatusRef.current = null;
+      setDraggingTask(null);
+      setHoveredStatus(null);
+      onDragStateChange?.(false);
+
+      if (!cancelled && target) {
+        const sourceStatus = normalizeTaskStatus(activeDragged.status);
+        if (sourceStatus !== target) {
+          const isRev =
+            sourceStatus === 'IN_REVIEW' && target === 'IN_PROGRESS';
+          triggerStatusTransition(activeDragged, target, isRev);
+        }
+      }
+      return;
+    }
+
+    // If user simply tapped the card without holding or scrolling -> open Task Detail Modal
+    if (!cancelled && !didMoveMuchRef.current) {
+      onSelectTask?.(task);
+    }
   };
 
   const sprintIdsSet = useMemo(
-    () => new Set(sprints.map((s) => s.id)),
-    [sprints]
+    () => new Set(orderedSprints.map((s) => s.id)),
+    [orderedSprints]
   );
 
   // Filter tasks strictly by the selected Sprint (or Backlog if no sprints exist) + Assignee filter + Search
@@ -312,7 +464,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       if (t.isDeleted) return false;
 
       // 1. Sprint filter (Only show tasks of the currently selected Sprint)
-      if (sprints.length > 0) {
+      if (orderedSprints.length > 0) {
         if (effectiveSprintId === 'BACKLOG') {
           if (t.sprintId && sprintIdsSet.has(t.sprintId)) return false;
         } else {
@@ -341,7 +493,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     });
   }, [
     tasks,
-    sprints.length,
+    orderedSprints.length,
     effectiveSprintId,
     sprintIdsSet,
     assigneeFilter,
@@ -351,9 +503,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   const currentSprintLabel = useMemo(() => {
     if (effectiveSprintId === 'BACKLOG') return tr("Backlog");
-    const found = sprints.find((s) => s.id === effectiveSprintId);
+    const found = orderedSprints.find((s) => s.id === effectiveSprintId);
     return found ? found.name : tr("Sprint hiện tại");
-  }, [effectiveSprintId, sprints]);
+  }, [effectiveSprintId, orderedSprints]);
 
   const currentAssigneeLabel = useMemo(() => {
     if (assigneeFilter === 'ALL') return tr("Người được chỉ định");
@@ -367,17 +519,18 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   const searchedSprints = useMemo(() => {
     const q = sprintSearchQuery.trim().toLowerCase();
-    if (!q) return sprints;
-    return sprints.filter((s) => s.name.toLowerCase().includes(q));
-  }, [sprints, sprintSearchQuery]);
+    if (!q) return orderedSprints;
+    return orderedSprints.filter((s) => s.name.toLowerCase().includes(q));
+  }, [orderedSprints, sprintSearchQuery]);
 
   const handleHorizontalScroll = (
     e: NativeSyntheticEvent<NativeScrollEvent>
   ) => {
     const x = e.nativeEvent.contentOffset.x;
+    scrollOffsetXRef.current = x;
     const idx = Math.min(
       COLUMNS.length - 1,
-      Math.max(0, Math.round(x / (COLUMN_WIDTH + 12)))
+      Math.max(0, Math.round(x / (COLUMN_WIDTH + COLUMN_GAP)))
     );
     if (idx !== activeColIndex) {
       setActiveColIndex(idx);
@@ -385,7 +538,17 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   return (
-    <View style={styles.boardContainer}>
+    <View
+      ref={boardContainerRef}
+      style={styles.boardContainer}
+      onLayout={() => {
+        boardContainerRef.current?.measureInWindow((_x, y) => {
+          if (typeof y === 'number' && y > 0) {
+            boardTopYRef.current = y;
+          }
+        });
+      }}
+    >
       {/* Top Filter Bar (Search icon + Sprint Dropdown Pill + Assignee Dropdown Pill) */}
       <View style={styles.filterBarWrap}>
         <ScrollView
@@ -412,7 +575,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           </TouchableOpacity>
 
           {/* Sprint Dropdown Trigger Pill */}
-          {sprints.length > 0 && (
+          {orderedSprints.length > 0 && (
             <TouchableOpacity
               style={[
                 styles.dropdownPill,
@@ -499,29 +662,50 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         )}
       </View>
 
-      {/* 4 KANBAN COLUMNS SIDE-BY-SIDE (Stretching downward naturally, with Long-Press Drag & Drop!) */}
+      {/* 4 KANBAN COLUMNS SIDE-BY-SIDE (Stretching downward naturally, with Smooth iOS/Android Long-Press Drag & Drop!) */}
       <ScrollView
+        ref={horizontalScrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         scrollEnabled={!draggingTask}
         onScroll={handleHorizontalScroll}
-        scrollEventThrottle={32}
+        scrollEventThrottle={16}
         contentContainerStyle={styles.columnsScrollContent}
       >
         {COLUMNS.map((col) => {
           const colTasks = filteredTasks.filter(
             (t) => normalizeTaskStatus(t.status) === col.key
           );
-          const isTargeted = Boolean(draggingTask && hoveredStatus === col.key);
+          const isSameCol =
+            draggingTask && normalizeTaskStatus(draggingTask.status) === col.key;
+          const isTargeted = Boolean(
+            draggingTask && hoveredStatus === col.key && !isSameCol
+          );
+
+          // Check whether dropping the dragged task into this column is permitted
+          const dropPerm =
+            draggingTask && !isSameCol
+              ? checkStatusTransitionPermission(
+                  draggingTask,
+                  col.key,
+                  userRole,
+                  currentUserId
+                )
+              : { allowed: true };
+          const isForbiddenHover = Boolean(isTargeted && !dropPerm.allowed);
+          const isAllowedHover = Boolean(isTargeted && dropPerm.allowed);
 
           return (
             <View
               key={col.key}
               style={[
                 styles.column,
-                isTargeted && {
+                isAllowedHover && {
                   borderColor: col.color,
                   borderWidth: 2,
+                },
+                isForbiddenHover && {
+                  opacity: 0.45,
                 },
               ]}
             >
@@ -552,7 +736,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 {colTasks.length === 0 ? (
                   <View style={styles.emptyColumn}>
                     <Text style={styles.emptyColumnText}>
-                      {isTargeted
+                      {isAllowedHover
                         ? tr("Thả task vào đây")
                         : tr("Chưa có công việc ở cột này")}
                     </Text>
@@ -572,15 +756,29 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     );
 
                     return (
-                      <TouchableOpacity
+                      <View
                         key={t.id}
-                        activeOpacity={0.85}
-                        delayLongPress={200}
-                        onLongPress={(e) => {
+                        onStartShouldSetResponder={() => true}
+                        onMoveShouldSetResponder={() =>
+                          Boolean(draggingTaskRef.current)
+                        }
+                        onResponderTerminationRequest={() =>
+                          !Boolean(draggingTaskRef.current)
+                        }
+                        onResponderGrant={(e) => {
                           const { pageX, pageY } = e.nativeEvent;
-                          handleStartDrag(t, pageX, pageY);
+                          startCardTouchSession(t, pageX, pageY);
                         }}
-                        onPress={() => onSelectTask && onSelectTask(t)}
+                        onResponderMove={(e) => {
+                          const { pageX, pageY } = e.nativeEvent;
+                          moveCardTouchSession(pageX, pageY);
+                        }}
+                        onResponderRelease={() => {
+                          endCardTouchSession(t, false);
+                        }}
+                        onResponderTerminate={() => {
+                          endCardTouchSession(t, true);
+                        }}
                         style={[
                           styles.taskCard,
                           isMyTask && {
@@ -591,15 +789,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                           isBeingDragged && styles.taskCardHidden,
                         ]}
                       >
-                        {/* 1. Task Title (Bold when isMyTask, no Sprint/Epic clutter!) */}
+                        {/* 1. Task Title (Bold when isMyTask, NOT struck through when DONE!) */}
                         <Text
                           style={[
                             styles.taskTitle,
                             isMyTask && { fontWeight: '800' },
-                            st === 'DONE' && {
-                              textDecorationLine: 'line-through',
-                              opacity: 0.7,
-                            },
                           ]}
                           numberOfLines={3}
                         >
@@ -628,18 +822,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                           </View>
                         )}
 
-                        {/* 3. Card Bottom Bar: Checkbox + TASK-# on Left | Priority `=` + Avatar on Right */}
+                        {/* 3. Card Bottom Bar: ONLY TASK-# on Left (Struck through when DONE, no checkbox icon!) | Priority `=` + Avatar on Right */}
                         <View style={styles.cardBottomRow}>
                           <View style={styles.cardBottomLeft}>
-                            <SquareCheck
-                              size={16}
-                              color={st === 'DONE' ? '#16A34A' : '#3B82F6'}
-                            />
                             <Text
                               style={[
                                 styles.taskCodeText,
                                 st === 'DONE' && {
                                   textDecorationLine: 'line-through',
+                                  opacity: 0.75,
                                 },
                               ]}
                             >
@@ -787,7 +978,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                             </TouchableOpacity>
                           </View>
                         )}
-                      </TouchableOpacity>
+                      </View>
                     );
                   })
                 )}
@@ -806,6 +997,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   </TouchableOpacity>
                 )}
               </View>
+
+              {/* Forbidden Drop Icon Overlay: ONLY centered prohibition icon (No red column fill, no text!) */}
+              {isForbiddenHover && (
+                <View style={styles.forbiddenIconOverlay} pointerEvents="none">
+                  <View style={styles.forbiddenIconCircle}>
+                    <Ban size={36} color="#EF4444" />
+                  </View>
+                </View>
+              )}
             </View>
           );
         })}
@@ -828,47 +1028,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       </View>
 
       {/* =================================================================== */}
-      {/* FULLSCREEN DRAG & DROP OVERLAY WHEN LONG-PRESSING A CARD */}
+      {/* FLOATING DRAGGED CARD FOLLOWING FINGER DURING DRAG & DROP */}
       {/* =================================================================== */}
       {draggingTask && (
-        <View
-          style={styles.dragOverlay}
-          pointerEvents="box-none"
-          {...panResponder.panHandlers}
-        >
-          {/* Top 4-Column Drop Targets Bar */}
-          <View style={styles.dropZoneBar}>
-            {COLUMNS.map((col) => {
-              const isHovered = hoveredStatus === col.key;
-              return (
-                <View
-                  key={`drop-${col.key}`}
-                  style={[
-                    styles.dropZoneTarget,
-                    isHovered && {
-                      borderColor: col.color,
-                      backgroundColor: isDark
-                        ? col.pillBgDark
-                        : col.pillBgLight,
-                      transform: [{ scale: 1.04 }],
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.dropZoneTargetText,
-                      isHovered && { color: col.color, fontWeight: '800' },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {tr(col.title)}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-
-          {/* Floating Dragged Card Following Finger */}
+        <View style={styles.dragOverlay} pointerEvents="none">
           <Animated.View
             style={[
               styles.floatingCard,
@@ -882,9 +1045,20 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             </Text>
             <View style={styles.cardBottomRow}>
               <Text style={styles.taskCodeText}>TASK-{draggingTask.id}</Text>
-              <Text style={styles.floatingTargetStatus}>
-                → {systemLabel(hoveredStatus || draggingTask.status)}
-              </Text>
+              {hoveredStatus &&
+              normalizeTaskStatus(draggingTask.status) !== hoveredStatus &&
+              !checkStatusTransitionPermission(
+                draggingTask,
+                hoveredStatus,
+                userRole,
+                currentUserId
+              ).allowed ? (
+                <Ban size={16} color="#EF4444" />
+              ) : (
+                <Text style={styles.floatingTargetStatus}>
+                  → {systemLabel(hoveredStatus || draggingTask.status)}
+                </Text>
+              )}
             </View>
           </Animated.View>
         </View>
@@ -946,7 +1120,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               />
             </View>
 
-            {/* Radio List of Sprints + Backlog */}
+            {/* Radio List of Sprints (Sprint 1 -> Sprint 2 -> ...) + Backlog */}
             <View
               style={[
                 styles.sheetListContainer,
@@ -1206,6 +1380,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 const getStyles = (colors: ThemeColors, isDark: boolean) =>
   StyleSheet.create({
     boardContainer: {
+      position: 'relative',
       gap: 10,
       paddingBottom: 16,
     },
@@ -1276,11 +1451,12 @@ const getStyles = (colors: ThemeColors, isDark: boolean) =>
       flex: 1,
     },
     columnsScrollContent: {
-      gap: 12,
+      gap: COLUMN_GAP,
       paddingRight: 16,
       alignItems: 'flex-start',
     },
     column: {
+      position: 'relative',
       width: COLUMN_WIDTH,
       backgroundColor: isDark ? '#161A1D' : '#EBECF0',
       borderRadius: 14,
@@ -1398,7 +1574,7 @@ const getStyles = (colors: ThemeColors, isDark: boolean) =>
     taskCodeText: {
       color: colors.subText,
       fontSize: 12,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     cardBottomRight: {
       flexDirection: 'row',
@@ -1493,6 +1669,28 @@ const getStyles = (colors: ThemeColors, isDark: boolean) =>
       fontSize: 13,
       fontWeight: '700',
     },
+    forbiddenIconOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    forbiddenIconCircle: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: isDark ? 'rgba(22,26,29,0.85)' : 'rgba(255,255,255,0.9)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 4,
+    },
     dotsRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1514,53 +1712,19 @@ const getStyles = (colors: ThemeColors, isDark: boolean) =>
       bottom: 0,
       zIndex: 9999,
     },
-    dropZoneBar: {
-      position: 'absolute',
-      top: 6,
-      left: 4,
-      right: 4,
-      flexDirection: 'row',
-      gap: 6,
-      backgroundColor: colors.headerBg,
-      padding: 8,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: isDark ? 0.5 : 0.15,
-      shadowRadius: 6,
-      elevation: 8,
-    },
-    dropZoneTarget: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 9,
-      paddingHorizontal: 4,
-      borderRadius: 8,
-      backgroundColor: colors.cardBg,
-      borderWidth: 1.5,
-      borderColor: colors.cardBorder,
-    },
-    dropZoneTargetText: {
-      color: colors.subText,
-      fontSize: 10,
-      fontWeight: '700',
-    },
     floatingCard: {
       position: 'absolute',
-      width: 230,
+      width: 240,
       backgroundColor: colors.cardBg,
       borderRadius: 12,
-      padding: 12,
+      padding: 13,
       borderWidth: 2,
       borderColor: colors.primary,
-      shadowColor: colors.primary,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.4,
-      shadowRadius: 10,
-      elevation: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.35,
+      shadowRadius: 12,
+      elevation: 14,
       gap: 6,
     },
     floatingTargetStatus: {
@@ -1600,14 +1764,14 @@ const getStyles = (colors: ThemeColors, isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-      borderRadius: 12,
       borderWidth: 1,
+      borderRadius: 12,
       paddingHorizontal: 12,
-      height: 40,
+      height: 42,
     },
     sheetSearchInput: {
       flex: 1,
-      fontSize: 13,
+      fontSize: 14,
     },
     sheetListContainer: {
       borderRadius: 16,
@@ -1625,14 +1789,15 @@ const getStyles = (colors: ThemeColors, isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
+      flex: 1,
     },
     sheetRadioLabel: {
       fontSize: 15,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     activeSprintPill: {
       backgroundColor: '#DBEAFE',
-      paddingHorizontal: 8,
+      paddingHorizontal: 7,
       paddingVertical: 2,
       borderRadius: 6,
     },
@@ -1645,13 +1810,13 @@ const getStyles = (colors: ThemeColors, isDark: boolean) =>
       width: 22,
       height: 22,
       borderRadius: 11,
-      borderWidth: 1.8,
+      borderWidth: 2,
       alignItems: 'center',
       justifyContent: 'center',
     },
     radioDot: {
-      width: 12,
-      height: 12,
+      width: 11,
+      height: 11,
       borderRadius: 6,
     },
   });
