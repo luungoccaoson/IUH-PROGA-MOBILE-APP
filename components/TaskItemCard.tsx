@@ -40,6 +40,7 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
       case 'IN_PROGRESS':
         return { bg: isDark ? '#1C2B42' : '#DEEBFF', text: '#579DFF', label: 'IN PROGRESS' };
       case 'REVIEW':
+      case 'IN_REVIEW':
         return { bg: isDark ? '#332E1B' : '#FEF7E0', text: '#FFAB00', label: 'REVIEW' };
       default:
         return { bg: isDark ? '#22272B' : '#F4F5F7', text: colors.subText, label: 'TODO' };
@@ -54,7 +55,8 @@ export const TaskItemCard: React.FC<TaskItemCardProps> = ({
     if (!onStatusChange) return;
     const statusMap: Record<TaskStatus, TaskStatus> = {
       TODO: 'IN_PROGRESS',
-      IN_PROGRESS: 'DONE',
+      IN_PROGRESS: 'IN_REVIEW',
+      IN_REVIEW: 'DONE',
       REVIEW: 'DONE',
       DONE: 'TODO',
     };

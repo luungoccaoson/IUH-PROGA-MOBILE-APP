@@ -1,5 +1,5 @@
 import { systemLabel, translate as tr, useTranslation as useSystemTranslation } from '../i18n';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -8,25 +8,36 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
-import { X } from 'lucide-react-native';
-import { TaskPriority, TaskStatus } from '../types';
+import { X, Layers, User as UserIcon } from 'lucide-react-native';
+import { TaskPriority, TaskStatus, Sprint, User } from '../types';
 import { useThemeStore, ThemeColors } from '../stores/useThemeStore';
 
 interface CreateTaskModalProps {
   visible: boolean;
+  sprints?: Sprint[];
+  members?: User[];
+  defaultSprintId?: number | null;
+  canAssignMember?: boolean;
   onClose: () => void;
   onSubmit: (data: {
     title: string;
     description?: string;
     priority: TaskPriority;
     status: TaskStatus;
+    sprintId?: number | null;
+    ownerId?: number | null;
     dueDate?: string;
   }) => Promise<void>;
 }
 
 export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   visible,
+  sprints = [],
+  members = [],
+  defaultSprintId = null,
+  canAssignMember = true,
   onClose,
   onSubmit,
 }) => {
@@ -38,9 +49,17 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
   const [status, setStatus] = useState<TaskStatus>('TODO');
+  const [sprintId, setSprintId] = useState<number | null>(defaultSprintId);
+  const [ownerId, setOwnerId] = useState<number | null>(null);
   const [dueDate, setDueDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (visible) {
+      setSprintId(defaultSprintId ?? (sprints.find((s) => s.status === 'ACTIVE')?.id ?? null));
+    }
+  }, [visible, defaultSprintId, sprints]);
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -55,12 +74,15 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
         description: description.trim() || undefined,
         priority,
         status,
+        sprintId,
+        ownerId: ownerId || undefined,
         dueDate: dueDate.trim() ? `${dueDate.trim()}T23:59:59` : undefined,
       });
       setTitle('');
       setDescription('');
       setPriority('MEDIUM');
       setStatus('TODO');
+      setOwnerId(null);
       setDueDate('');
       onClose();
     } catch (err: any) {
@@ -81,99 +103,200 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {!!error && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{tr(error)}</Text>
+          <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 520 }}>
+            {!!error && (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{tr(error)}</Text>
+              </View>
+            )}
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>{tr("TIÊU ĐỀ TASK *")}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={tr("Nhập tên nhiệm vụ...")}
+                placeholderTextColor={colors.mutedText}
+                value={title}
+                onChangeText={setTitle}
+              />
             </View>
-          )}
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>{tr("TIÊU ĐỀ TASK *")}</Text>
-            <TextInput
-              style={styles.input}
-              placeholder={tr("Nhập tên nhiệm vụ...")}
-              placeholderTextColor={colors.mutedText}
-              value={title}
-              onChangeText={setTitle}
-            />
-          </View>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>{tr("MÔ TẢ CHI TIẾT")}</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder={tr("Nội dung thực hiện...")}
+                placeholderTextColor={colors.mutedText}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+                value={description}
+                onChangeText={setDescription}
+              />
+            </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>{tr("MÔ TẢ CHI TIẾT")}</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder={tr("Nội dung thực hiện...")}
-              placeholderTextColor={colors.mutedText}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-              value={description}
-              onChangeText={setDescription}
-            />
-          </View>
-
-          {/* Priority selector */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>{tr("ĐỘ ƯU TIÊN")}</Text>
-            <View style={styles.optionRow}>
-              {(['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as TaskPriority[]).map((p) => (
-                <TouchableOpacity
-                  key={systemLabel(p)}
-                  style={[
-                    styles.optionChip,
-                    priority === p && styles.optionChipActive,
-                  ]}
-                  onPress={() => setPriority(p)}
+            {/* Sprint selector if sprints exist */}
+            {sprints.length > 0 && (
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>{tr("THUỘC GIAI ĐOẠN (SPRINT)")}</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.optionRow}
                 >
-                  <Text
+                  <TouchableOpacity
                     style={[
-                      styles.optionChipText,
-                      priority === p && styles.optionChipTextActive,
+                      styles.optionChip,
+                      sprintId === null && styles.optionChipActive,
                     ]}
+                    onPress={() => setSprintId(null)}
                   >
-                    {systemLabel(p)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+                    <Text
+                      style={[
+                        styles.optionChipText,
+                        sprintId === null && styles.optionChipTextActive,
+                      ]}
+                    >
+                      {tr("Backlog")}
+                    </Text>
+                  </TouchableOpacity>
+                  {sprints.map((sp) => (
+                    <TouchableOpacity
+                      key={sp.id}
+                      style={[
+                        styles.optionChip,
+                        sprintId === sp.id && styles.optionChipActive,
+                      ]}
+                      onPress={() => setSprintId(sp.id)}
+                    >
+                      <Text
+                        style={[
+                          styles.optionChipText,
+                          sprintId === sp.id && styles.optionChipTextActive,
+                        ]}
+                      >
+                        {sp.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
 
-          {/* Status selector */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>{tr("TRẠNG THÁI BAN ĐẦU")}</Text>
-            <View style={styles.optionRow}>
-              {(['TODO', 'IN_PROGRESS', 'DONE'] as TaskStatus[]).map((s) => (
-                <TouchableOpacity
-                  key={systemLabel(s)}
-                  style={[
-                    styles.optionChip,
-                    status === s && styles.optionChipActive,
-                  ]}
-                  onPress={() => setStatus(s)}
+            {/* Assignee selector if members exist */}
+            {canAssignMember && members.length > 0 && (
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>{tr("GIAO CHO THÀNH VIÊN")}</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.optionRow}
                 >
-                  <Text
+                  <TouchableOpacity
                     style={[
-                      styles.optionChipText,
-                      status === s && styles.optionChipTextActive,
+                      styles.optionChip,
+                      ownerId === null && styles.optionChipActive,
                     ]}
+                    onPress={() => setOwnerId(null)}
                   >
-                    {systemLabel(s)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+                    <Text
+                      style={[
+                        styles.optionChipText,
+                        ownerId === null && styles.optionChipTextActive,
+                      ]}
+                    >
+                      {tr("Chưa giao")}
+                    </Text>
+                  </TouchableOpacity>
+                  {members.map((m) => {
+                    const mName = m.fullName || m.displayName || m.username;
+                    return (
+                      <TouchableOpacity
+                        key={m.id}
+                        style={[
+                          styles.optionChip,
+                          ownerId === m.id && styles.optionChipActive,
+                        ]}
+                        onPress={() => setOwnerId(m.id)}
+                      >
+                        <Text
+                          style={[
+                            styles.optionChipText,
+                            ownerId === m.id && styles.optionChipTextActive,
+                          ]}
+                        >
+                          {mName}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>{tr("HẠN HOÀN THÀNH (YYYY-MM-DD)")}</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="2026-08-30"
-              placeholderTextColor={colors.mutedText}
-              value={dueDate}
-              onChangeText={setDueDate}
-            />
-          </View>
+            {/* Priority selector */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>{tr("ĐỘ ƯU TIÊN")}</Text>
+              <View style={styles.optionRow}>
+                {(['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as TaskPriority[]).map((p) => (
+                  <TouchableOpacity
+                    key={systemLabel(p)}
+                    style={[
+                      styles.optionChip,
+                      priority === p && styles.optionChipActive,
+                    ]}
+                    onPress={() => setPriority(p)}
+                  >
+                    <Text
+                      style={[
+                        styles.optionChipText,
+                        priority === p && styles.optionChipTextActive,
+                      ]}
+                    >
+                      {systemLabel(p)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Status selector */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>{tr("TRẠNG THÁI BAN ĐẦU")}</Text>
+              <View style={styles.optionRow}>
+                {(['TODO', 'IN_PROGRESS', 'IN_REVIEW'] as TaskStatus[]).map((s) => (
+                  <TouchableOpacity
+                    key={systemLabel(s)}
+                    style={[
+                      styles.optionChip,
+                      status === s && styles.optionChipActive,
+                    ]}
+                    onPress={() => setStatus(s)}
+                  >
+                    <Text
+                      style={[
+                        styles.optionChipText,
+                        status === s && styles.optionChipTextActive,
+                      ]}
+                    >
+                      {systemLabel(s)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>{tr("HẠN HOÀN THÀNH (YYYY-MM-DD)")}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="2026-08-30"
+                placeholderTextColor={colors.mutedText}
+                value={dueDate}
+                onChangeText={setDueDate}
+              />
+            </View>
+          </ScrollView>
 
           <View style={styles.actions}>
             <TouchableOpacity style={styles.cancelBtn} onPress={onClose} disabled={loading}>

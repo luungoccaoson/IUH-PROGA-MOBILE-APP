@@ -1,8 +1,10 @@
 // Enums
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'REVIEW' | 'DONE';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type SprintStatus = 'FUTURE' | 'ACTIVE' | 'CLOSED';
 export type AgentType = 'REQUIREMENT' | 'PM' | 'TECHNICAL_ADVISOR';
 export type RoleName = 'ADMIN' | 'PM' | 'MEMBER';
+export type SpaceRoleType = 'PM' | 'ASSISTANT' | 'MEMBER';
 
 // User & Auth
 export interface User {
@@ -65,6 +67,18 @@ export interface Space {
   name: string;
   startDate?: string;
   endDate?: string;
+  isPrivate?: boolean;
+  createdAt: string;
+}
+
+export interface Sprint {
+  id: number;
+  spaceId: number;
+  name: string;
+  goal?: string;
+  status: SprintStatus;
+  startDate?: string;
+  endDate?: string;
   createdAt: string;
 }
 
@@ -72,15 +86,24 @@ export interface Space {
 export interface Task {
   id: number;
   spaceId: number;
+  sprintId?: number | null;
+  sprintName?: string;
   title: string;
   description?: string;
   status: TaskStatus;
   priority: TaskPriority;
-  ownerId?: number; // Assignee ID
+  ownerId?: number | null; // Assignee ID
   ownerName?: string;
+  assignee?: { id?: number; fullName?: string; email?: string };
+  assignedRole?: string;
+  suggestedMemberName?: string;
+  riskWarning?: string;
+  estimatedDays?: number;
   startDate?: string;
   dueDate?: string;
   createdAt: string;
+  isDeleted?: boolean;
+  deletedAt?: string;
 }
 
 export interface TaskNote {
@@ -123,6 +146,25 @@ export interface DeconstructedTaskItem {
   priority?: TaskPriority;
 }
 
+export interface NotificationItem {
+  id: number;
+  userId: number;
+  title?: string;
+  message: string;
+  type?: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface AppVersionInfo {
+  currentVersion?: string;
+  latestVersion: string;
+  releaseNotes?: string;
+  downloadUrl?: string;
+  forceUpdate?: boolean;
+  updateAvailable?: boolean;
+}
+
 // Generic API Response Wrapper
 export interface ApiResponse<T> {
   success: boolean;
@@ -130,29 +172,3 @@ export interface ApiResponse<T> {
   data: T;
   timestamp?: string;
 }
-
-// Notification Domain
-export interface NotificationItem {
-  id: number;
-  userId: number;
-  workspaceId?: number;
-  title: string;
-  content: string;
-  isRead: boolean;
-  typeId?: number;
-  typeCode?: string;
-  typeLabel?: string;
-  createdAt: string;
-}
-
-// App Version Update Domain
-export interface AppVersionInfo {
-  latestVersion: string;
-  latestVersionCode: number;
-  minRequiredVersion: string;
-  forceUpdate: boolean;
-  downloadUrl: string;
-  releaseNotes: string;
-  releaseDate: string;
-}
-
