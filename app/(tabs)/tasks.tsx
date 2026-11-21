@@ -58,6 +58,7 @@ export default function TasksScreen() {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isKanbanDragging, setIsKanbanDragging] = useState<boolean>(false);
 
   const [confirmModalState, setConfirmModalState] = useState<{
     visible: boolean;
@@ -486,6 +487,7 @@ export default function TasksScreen() {
           <ScrollView
             style={styles.listContent}
             showsVerticalScrollIndicator={false}
+            scrollEnabled={!isKanbanDragging}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -508,6 +510,7 @@ export default function TasksScreen() {
                 onRequestStatusChange={handleRequestStatusChange}
                 onSelectTask={(t) => setSelectedTask(t)}
                 onSelfAssign={handleSelfAssign}
+                onDragStateChange={setIsKanbanDragging}
               />
             ) : (
               filteredTasks.map(({ task, spaceName, sprintName }) => {
@@ -553,7 +556,14 @@ export default function TasksScreen() {
                     {/* Top Row: Code + My Task Badge + Status Badge */}
                     <View style={styles.cardTopRow}>
                       <View style={styles.codeGroup}>
-                        <Text style={styles.taskCode}>TASK-{task.id}</Text>
+                        <Text
+                          style={[
+                            styles.taskCode,
+                            isDone && styles.strikeThroughText,
+                          ]}
+                        >
+                          TASK-{task.id}
+                        </Text>
                         {isMyTask && (
                           <View style={styles.myTaskTag}>
                             <Text style={styles.myTaskTagText}>
@@ -588,12 +598,11 @@ export default function TasksScreen() {
                       </View>
                     </View>
 
-                    {/* Title (Bold if isMyTask) */}
+                    {/* Title (Bold if isMyTask, NOT struck through when DONE!) */}
                     <Text
                       style={[
                         styles.issueTitle,
                         isMyTask && { fontWeight: '800', fontSize: 15 },
-                        isDone && styles.strikeThroughText,
                       ]}
                       numberOfLines={2}
                     >
